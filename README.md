@@ -1,0 +1,2 @@
+# ninja
+all ninja works
