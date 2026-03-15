@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(200) NOT NULL,
+    category VARCHAR(100) DEFAULT 'General',
     contact_person VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_code (code),
+    INDEX idx_category (category),
     INDEX idx_name (name),
     INDEX idx_email (email),
     INDEX idx_status (status)
@@ -60,10 +62,10 @@ INSERT INTO users (username, password, email, full_name, role, status) VALUES
 ON DUPLICATE KEY UPDATE username=username;
 
 -- Insert sample suppliers for testing
-INSERT INTO suppliers (code, name, contact_person, email, phone, address, status) VALUES
-('SUP-00001', 'Tech Solutions Pty Ltd', 'John Smith', 'john@techsolutions.com.au', '+61 2 9876 5432', '123 Tech Street, Sydney NSW 2000', 'active'),
-('SUP-00002', 'Office Supplies Co', 'Jane Doe', 'jane@officesupplies.com', '+61 3 8765 4321', '456 Office Road, Melbourne VIC 3000', 'active'),
-('SUP-00003', 'Digital Services Group', 'Mike Johnson', 'mike@digitalservices.com', '+61 4 7654 3210', '789 Digital Ave, Brisbane QLD 4000', 'active')
+INSERT INTO suppliers (code, name, category, contact_person, email, phone, address, status) VALUES
+('SUP-00001', 'Tech Solutions Pty Ltd', 'IT Services', 'John Smith', 'john@techsolutions.com.au', '+61 2 9876 5432', '123 Tech Street, Sydney NSW 2000', 'active'),
+('SUP-00002', 'Office Supplies Co', 'Office Supplies', 'Jane Doe', 'jane@officesupplies.com', '+61 3 8765 4321', '456 Office Road, Melbourne VIC 3000', 'active'),
+('SUP-00003', 'Digital Services Group', 'IT Services', 'Mike Johnson', 'mike@digitalservices.com', '+61 4 7654 3210', '789 Digital Ave, Brisbane QLD 4000', 'active')
 ON DUPLICATE KEY UPDATE code=code;
 
 -- Create views for common queries

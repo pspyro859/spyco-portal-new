@@ -16,8 +16,8 @@ class Supplier {
         $this->db = \Database::getInstance()->getConnection();
     }
     
-    public function getAll($limit = 50, $offset = 0, $search = null) {
-        $sql = "SELECT id, code, name, contact_person, email, phone, address, status, created_at 
+    public function getAll($limit = 50, $offset = 0, $search = null, $category = null) {
+        $sql = "SELECT id, code, name, category, contact_person, email, phone, address, status, created_at 
                 FROM suppliers 
                 WHERE status != 'deleted'";
         
@@ -29,7 +29,12 @@ class Supplier {
             $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
         }
         
-        $sql .= " ORDER BY code ASC LIMIT ? OFFSET ?";
+        if ($category && $category !== 'all') {
+            $sql .= " AND category = ?";
+            $params[] = $category;
+        }
+        
+        $sql .= " ORDER BY category ASC, name ASC LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
         
@@ -58,13 +63,17 @@ class Supplier {
             $data['code'] = $this->generateSupplierCode();
         }
         
-        $sql = "INSERT INTO suppliers (code, name, contact_person, email, phone, address, status, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())";
+        // Set default category if not provided
+        $category = isset($data['category']) && !empty($data['category']) ? $data['category'] : 'General';
+        
+        $sql = "INSERT INTO suppliers (code, name, category, contact_person, email, phone, address, status, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NOW())";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             $data['code'],
             $data['name'],
+            $category,
             $data['contact_person'],
             $data['email'],
             $data['phone'],
@@ -90,6 +99,24 @@ class Supplier {
         
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($params);
+    }
+    
+    /**
+     * Get all unique categories
+     */
+    public function getCategories() {
+        $sql = "SELECT DISTINCT category FROM suppliers 
+                WHERE status != 'deleted' AND category IS NOT NULL 
+                ORDER BY category ASC";
+        $stmt = $this->db->query($sql);
+        $results = $stmt->fetchAll();
+        
+        // Extract category names
+        $categories = array_map(function($row) {
+            return $row['category'];
+        }, $results);
+        
+        return $categories;
     }
     
     public function delete($id) {

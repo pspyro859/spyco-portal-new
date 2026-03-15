@@ -54,10 +54,11 @@ class SupplierController {
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
             $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+            $category = isset($_GET['category']) ? trim($_GET['category']) : null;
             
             $offset = ($page - 1) * $limit;
             
-            $suppliers = $this->supplierModel->getAll($limit, $offset, $search);
+            $suppliers = $this->supplierModel->getAll($limit, $offset, $search, $category);
             $total = $this->supplierModel->count($search);
             
             echo json_encode([
@@ -261,6 +262,26 @@ class SupplierController {
             echo json_encode([
                 'success' => false,
                 'message' => 'Search failed'
+            ]);
+        }
+    }
+    
+    public function categories() {
+        header('Content-Type: application/json');
+        
+        try {
+            $categories = $this->supplierModel->getCategories();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $categories
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to retrieve categories'
             ]);
         }
     }

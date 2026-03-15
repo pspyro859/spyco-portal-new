@@ -90,6 +90,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                                     <thead>
                                         <tr>
                                             <th>Supplier Code</th>
+                                            <th>Category</th>
                                             <th>Name</th>
                                             <th>Contact Person</th>
                                             <th>Email</th>
@@ -196,6 +197,13 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                 <div class="form-group">
                     <label for="supplier-name">Name *</label>
                     <input type="text" id="supplier-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="supplier-category">Category</label>
+                    <select id="supplier-category" name="category">
+                        <option value="">Select Category</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">

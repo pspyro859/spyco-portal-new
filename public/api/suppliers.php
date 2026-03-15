@@ -40,6 +40,8 @@ try {
                 $controller->index();
             } elseif ($path === '/search') {
                 $controller->search();
+            } elseif ($path === '/categories') {
+                $controller->categories();
             } elseif (preg_match('/^\/(\d+)$/', $path, $matches)) {
                 $controller->show($matches[1]);
             } else {

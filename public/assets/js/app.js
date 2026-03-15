@@ -101,13 +101,14 @@ function displaySuppliers(suppliers) {
     const tbody = document.getElementById('suppliers-tbody');
     
     if (suppliers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No suppliers found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No suppliers found</td></tr>';
         return;
     }
     
     tbody.innerHTML = suppliers.map(supplier => `
         <tr>
             <td><strong>${escapeHtml(supplier.code)}</strong></td>
+            <td>${escapeHtml(supplier.category || 'General')}</td>
             <td>${escapeHtml(supplier.name)}</td>
             <td>${escapeHtml(supplier.contact_person)}</td>
             <td>${escapeHtml(supplier.email)}</td>
@@ -162,6 +163,9 @@ function openModal(supplierId = null) {
     form.reset();
     document.getElementById('supplier-id').value = '';
     
+    // Load categories
+    loadCategories();
+    
     if (supplierId) {
         title.textContent = 'Edit Supplier';
         // Load supplier data
@@ -176,6 +180,7 @@ function openModal(supplierId = null) {
                 document.getElementById('supplier-id').value = data.data.id;
                 document.getElementById('supplier-code').value = data.data.code || '';
                 document.getElementById('supplier-name').value = data.data.name;
+                document.getElementById('supplier-category').value = data.data.category || 'General';
                 document.getElementById('contact-person').value = data.data.contact_person;
                 document.getElementById('supplier-email').value = data.data.email;
                 document.getElementById('supplier-phone').value = data.data.phone;
@@ -187,6 +192,35 @@ function openModal(supplierId = null) {
     }
     
     modal.classList.add('show');
+}
+
+function loadCategories() {
+    fetch(`${API_BASE}/suppliers/categories`, {
+        headers: {
+            'X-CSRF-Token': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const select = document.getElementById('supplier-category');
+            select.innerHTML = '<option value="">Select Category</option>';
+            
+            // Add common categories first
+            const commonCategories = ['General', 'Electronics', 'Materials', 'Services', 'Software', 'Hardware'];
+            commonCategories.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+            
+            // Add existing categories
+            data.data.forEach(cat => {
+                if (!commonCategories.includes(cat)) {
+                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+                }
+            });
+        }
+    })
+    .catch(error => console.error('Failed to load categories:', error));
 }
 
 function closeModal() {
@@ -201,6 +235,7 @@ function saveSupplier(event) {
     
     const formData = {
         name: document.getElementById('supplier-name').value,
+        category: document.getElementById('supplier-category').value,
         contact_person: document.getElementById('contact-person').value,
         email: document.getElementById('supplier-email').value,
         phone: document.getElementById('supplier-phone').value,
