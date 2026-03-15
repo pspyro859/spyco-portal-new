@@ -220,68 +220,29 @@ function loadCategories() {
     .catch(error => console.error('Failed to load categories:', error));
 }
 
-// Auto-generate code based on supplier name - Set up when page loads
-function setupCodeGeneration() {
+// Simple code generation function - called directly from HTML
+function generateCode() {
     const nameInput = document.getElementById('supplier-name');
     const codeInput = document.getElementById('supplier-code');
     
-    if (nameInput && codeInput) {
-        nameInput.addEventListener('input', function() {
-            // Only auto-generate if code field is empty or not manually edited
-            if (!codeInput.dataset.manuallyEdited) {
-                const name = this.value;
-                if (name.length > 0) {
-                    const code = generateCodeFromName(name);
-                    codeInput.value = code;
-                } else {
-                    codeInput.value = '';
-                }
+    // Only generate if name field has content and code hasn't been manually edited
+    if (nameInput && codeInput && nameInput.value.length > 0) {
+        // Check if user has manually typed in the code field
+        if (!codeInput.dataset.manual) {
+            const cleanName = nameInput.value.replace(/[^a-zA-Z]/g, '');
+            let prefix = cleanName.substring(0, 4).toUpperCase();
+            
+            // Pad with 'X' if needed
+            while (prefix.length < 4) {
+                prefix += 'X';
             }
-        });
-        
-        // Mark code as manually edited when user types in it
-        codeInput.addEventListener('input', function() {
-            this.dataset.manuallyEdited = 'true';
-        });
+            
+            codeInput.value = prefix + '-1';
+        }
+    } else if (codeInput && nameInput && nameInput.value.length === 0) {
+        // Clear code if name is empty
+        codeInput.value = '';
     }
-}
-
-// Call setup when page loads
-setupCodeGeneration();
-
-// Generate code from name (XXXX-X format)
-function generateCodeFromName(name) {
-    // Clean name - keep only letters
-    const cleanName = name.replace(/[^a-zA-Z]/g, '');
-    
-    // Get first 4 letters, uppercase
-    let prefix = cleanName.substring(0, 4).toUpperCase();
-    
-    // Pad with 'X' if needed
-    while (prefix.length < 4) {
-        prefix += 'X';
-    }
-    
-    // Use 1 as placeholder number (actual number will be assigned on server)
-    return `${prefix}-1`;
-}
-
-// Validate code format
-function validateCodeFormat() {
-    const codeInput = document.getElementById('supplier-code');
-    const code = codeInput.value;
-    const formatRegex = /^[A-Z]{4}-\d+$/;
-    
-    if (code && !formatRegex.test(code)) {
-        codeInput.style.borderColor = '#ff6b6b';
-        showWarning('Code format should be XXXX-X (e.g., TECH-1)');
-    } else {
-        codeInput.style.borderColor = '';
-    }
-}
-
-function showWarning(message) {
-    alert('Warning: ' + message);
 }
 
 function closeModal() {

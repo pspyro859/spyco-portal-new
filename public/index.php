@@ -190,13 +190,13 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                 
                 <div class="form-group">
                     <label for="supplier-code">Supplier Code</label>
-                    <input type="text" id="supplier-code" name="code" placeholder="Auto-generated" oninput="validateCodeFormat()">
+                    <input type="text" id="supplier-code" name="code" placeholder="Auto-generated" onkeyup="generateCode()" oninput="this.dataset.manual='true'">
                     <small style="color: #666;">Auto-generated based on name (format: XXXX-X), or enter manually</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="supplier-name">Name *</label>
-                    <input type="text" id="supplier-name" name="name" required>
+                    <input type="text" id="supplier-name" name="name" required onkeyup="generateCode()">
                 </div>
                 
                 <div class="form-group">
