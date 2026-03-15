@@ -223,6 +223,67 @@ function loadCategories() {
     .catch(error => console.error('Failed to load categories:', error));
 }
 
+// Auto-generate code based on supplier name
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('supplier-name');
+    const codeInput = document.getElementById('supplier-code');
+    
+    if (nameInput && codeInput) {
+        nameInput.addEventListener('input', function() {
+            // Only auto-generate if code field is empty or not manually edited
+            if (!codeInput.dataset.manuallyEdited) {
+                const name = this.value;
+                if (name.length > 0) {
+                    const code = generateCodeFromName(name);
+                    codeInput.value = code;
+                } else {
+                    codeInput.value = '';
+                }
+            }
+        });
+        
+        // Mark code as manually edited when user types in it
+        codeInput.addEventListener('input', function() {
+            this.dataset.manuallyEdited = 'true';
+        });
+    }
+});
+
+// Generate code from name (XXXX-X format)
+function generateCodeFromName(name) {
+    // Clean name - keep only letters
+    const cleanName = name.replace(/[^a-zA-Z]/g, '');
+    
+    // Get first 4 letters, uppercase
+    let prefix = cleanName.substring(0, 4).toUpperCase();
+    
+    // Pad with 'X' if needed
+    while (prefix.length < 4) {
+        prefix += 'X';
+    }
+    
+    // Use 1 as placeholder number (actual number will be assigned on server)
+    return `${prefix}-1`;
+}
+
+// Validate code format
+function validateCodeFormat() {
+    const codeInput = document.getElementById('supplier-code');
+    const code = codeInput.value;
+    const formatRegex = /^[A-Z]{4}-\d+$/;
+    
+    if (code && !formatRegex.test(code)) {
+        codeInput.style.borderColor = '#ff6b6b';
+        showWarning('Code format should be XXXX-X (e.g., TECH-1)');
+    } else {
+        codeInput.style.borderColor = '';
+    }
+}
+
+function showWarning(message) {
+    alert('Warning: ' + message);
+}
+
 function closeModal() {
     document.getElementById('supplier-modal').classList.remove('show');
 }

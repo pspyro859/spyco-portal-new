@@ -143,8 +143,8 @@ class Supplier {
     
     /**
      * Generate next supplier code
-     * Format: XXXX-XXXX where XXXX are first 4 letters of supplier name (uppercase)
-     * Example: TECH-0001 for "Tech Solutions Inc"
+     * Format: XXXX-X where XXXX are first 4 letters of supplier name (uppercase)
+     * Example: TECH-1 for "Tech Solutions Inc"
      */
     public function generateSupplierCode($supplierName = null) {
         // Generate prefix from supplier name (first 4 letters, uppercase)
@@ -168,7 +168,7 @@ class Supplier {
         $lastSupplier = $stmt->fetch();
         
         if ($lastSupplier && !empty($lastSupplier['code'])) {
-            // Extract number from last code (e.g., TECH-0005 -> 5)
+            // Extract number from last code (e.g., TECH-5 -> 5)
             $parts = explode('-', $lastSupplier['code']);
             $lastNumber = (int)$parts[1];
             $newNumber = $lastNumber + 1;
@@ -176,8 +176,8 @@ class Supplier {
             $newNumber = 1;
         }
         
-        // Format as XXXX-XXXX (prefix + 4-digit number)
-        return sprintf('%s-%04d', $prefix, $newNumber);
+        // Format as XXXX-X (prefix + 1-digit number)
+        return sprintf('%s-%d', $prefix, $newNumber);
     }
     
     public function search($query) {

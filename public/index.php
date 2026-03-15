@@ -190,8 +190,8 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                 
                 <div class="form-group">
                     <label for="supplier-code">Supplier Code</label>
-                    <input type="text" id="supplier-code" name="code" placeholder="Auto-generated if empty" readonly>
-                    <small style="color: #666;">Leave empty to auto-generate</small>
+                    <input type="text" id="supplier-code" name="code" placeholder="Auto-generated" oninput="validateCodeFormat()">
+                    <small style="color: #666;">Auto-generated based on name (format: XXXX-X), or enter manually</small>
                 </div>
                 
                 <div class="form-group">
