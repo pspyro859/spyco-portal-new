@@ -1,0 +1,108 @@
+name: Deploy Spyco Portal
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: pdo, pdo_mysql, json, mbstring
+        
+    - name: Copy .env.example to .env
+      run: |
+        if [ ! -f .env ]; then
+          cp .env.example .env
+        fi
+    
+    - name: Validate PHP syntax
+      run: |
+        find public -name "*.php" -print0 | xargs -0 -n1 php -l
+        find src -name "*.php" -print0 | xargs -0 -n1 php -l
+        find config -name "*.php" -print0 | xargs -0 -n1 php -l
+    
+    - name: Run PHP CS (Code Style)
+      run: |
+        composer global require squizlabs/php_codesniffer
+        phpcs --standard=PSR12 public src config || true
+    
+    - name: Create deployment artifact
+      run: |
+        mkdir -p deploy
+        cp -r config deploy/
+        cp -r database deploy/
+        cp -r public deploy/
+        cp -r src deploy/
+        cp .env.example deploy/
+        cp README.md deploy/
+        cp INSTALLATION.md deploy/
+        cp LICENSE.md deploy/ 2>/dev/null || true
+        
+        # Create .gitkeep for logs
+        mkdir -p deploy/logs
+        touch deploy/logs/.gitkeep
+        
+        # Create deployment script
+        cat > deploy/deploy.sh << 'EOF'
+        #!/bin/bash
+        chmod +x deploy/deploy.sh
+        EOF
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: spyco-portal
+        path: deploy/
+        retention-days: 30
+    
+    - name: Deploy to Server (SSH)
+      if: github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_KEY }}
+        port: ${{ secrets.DEPLOY_PORT || 22 }}
+        script: |
+          cd ${{ secrets.DEPLOY_PATH }}
+          
+          # Backup current version
+          if [ -d "public" ]; then
+            tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz public
+          fi
+          
+          # Pull latest changes
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Run deployment script
+          chmod +x deploy.sh
+          ./deploy.sh
+          
+          # Restart Apache (if needed)
+          sudo systemctl reload apache2 || true
+    
+    - name: Send notification on success
+      if: success()
+      run: |
+        echo "Deployment successful!"
+        echo "Commit: ${{ github.sha }}"
+        echo "Branch: ${{ github.ref }}"
+    
+    - name: Send notification on failure
+      if: failure()
+      run: |
+        echo "Deployment failed!"
+        echo "Please check the logs for details."

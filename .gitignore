@@ -1,0 +1,87 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.sql.gz
+*.sqlite
+*.db
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.buildpath
+
+# Composer
+/vendor/
+composer.lock
+
+# Node modules (if using npm)
+node_modules/
+npm-debug.log
+
+# Build outputs
+dist/
+build/
+.cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Uploads (if you have user uploads)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# SSL certificates
+*.key
+*.crt
+*.pem
+*.csr
+
+# Secrets
+secrets/
+*.secret
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Documentation drafts
+*.draft.md
+
+# Local configuration files
+config/local.php
+config/production.php

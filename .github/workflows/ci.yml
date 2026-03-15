@@ -1,0 +1,97 @@
+name: CI - Code Quality & Testing
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  php-lint:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: pdo, pdo_mysql, json, mbstring
+        
+    - name: Check PHP syntax
+      run: |
+        echo "Checking PHP files..."
+        find public src config -name "*.php" -print0 | xargs -0 -n1 php -l
+        
+  code-style:
+    name: PHP Code Style (PSR-12)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: pdo, pdo_mysql, json, mbstring
+        coverage: none
+        
+    - name: Install PHP CS
+      run: |
+        composer global require squizlabs/php_codesniffer
+        echo "${HOME}/.composer/vendor/bin" >> $GITHUB_PATH
+        
+    - name: Run PHP CS
+      run: |
+        phpcs --standard=PSR12 --ignore=vendor --ignore=node_modules public src config
+      continue-on-error: true
+      
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Run Security Scan
+      run: |
+        echo "Checking for sensitive files..."
+        if [ -f .env ]; then
+          echo "ERROR: .env file detected! Should not be in repository."
+          exit 1
+        fi
+        
+        echo "Checking for hardcoded secrets..."
+        if grep -r "password\|secret\|api_key\|api_secret" --include="*.php" public src config | grep -v "// password\|// secret\|'password'"; then
+          echo "WARNING: Possible hardcoded secrets detected. Please review."
+        fi
+        
+  file-permissions:
+    name: File Permissions Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Check file permissions
+      run: |
+        echo "Checking for executable files that shouldn't be..."
+        find . -type f -name "*.php" -executable && echo "WARNING: PHP files should not be executable" || true
+        
+        echo "Checking .gitignore..."
+        if [ ! -f .gitignore ]; then
+          echo "ERROR: .gitignore file is missing!"
+          exit 1
+        fi
+        
+        echo "Checking if .env is in .gitignore..."
+        if ! grep -q "^\.env$" .gitignore; then
+          echo "WARNING: .env should be in .gitignore"
+        fi

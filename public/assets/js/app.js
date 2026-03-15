@@ -1,0 +1,314 @@
+// Spyco Portal JavaScript Application
+
+// Configuration
+const API_BASE = '/api';
+let currentPage = 1;
+let itemsPerPage = 10;
+let csrfToken = '';
+
+// Initialize application
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is authenticated
+    checkAuthentication();
+});
+
+// Authentication Functions
+function checkAuthentication() {
+    fetch(`${API_BASE}/auth/check`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.authenticated) {
+                csrfToken = data.csrf_token;
+                loadSuppliers();
+                loadDashboardStats();
+            }
+        })
+        .catch(error => console.error('Auth check failed:', error));
+}
+
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('login-error');
+    
+    fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            csrfToken = data.csrf_token;
+            window.location.reload();
+        } else {
+            errorDiv.textContent = data.message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Login failed. Please try again.';
+        errorDiv.classList.add('show');
+    });
+}
+
+function logout() {
+    fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    })
+    .catch(error => console.error('Logout failed:', error));
+}
+
+// Supplier Functions
+function loadSuppliers(page = 1, search = '') {
+    const url = `${API_BASE}/suppliers/?page=${page}&limit=${itemsPerPage}${search ? '&search=' + encodeURIComponent(search) : ''}`;
+    
+    fetch(url, {
+        headers: {
+            'X-CSRF-Token': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySuppliers(data.data);
+            displayPagination(data.pagination);
+            currentPage = page;
+        }
+    })
+    .catch(error => {
+        console.error('Failed to load suppliers:', error);
+        showError('Failed to load suppliers');
+    });
+}
+
+function displaySuppliers(suppliers) {
+    const tbody = document.getElementById('suppliers-tbody');
+    
+    if (suppliers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No suppliers found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = suppliers.map(supplier => `
+        <tr>
+            <td>${escapeHtml(supplier.name)}</td>
+            <td>${escapeHtml(supplier.contact_person)}</td>
+            <td>${escapeHtml(supplier.email)}</td>
+            <td>${escapeHtml(supplier.phone)}</td>
+            <td><span class="status-badge ${supplier.status}">${supplier.status}</span></td>
+            <td>
+                <button class="action-btn edit" onclick="editSupplier(${supplier.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-btn delete" onclick="deleteSupplier(${supplier.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function displayPagination(pagination) {
+    const paginationDiv = document.getElementById('pagination');
+    
+    if (pagination.total_pages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Previous button
+    html += `<button onclick="loadSuppliers(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''}>Previous</button>`;
+    
+    // Page numbers
+    for (let i = 1; i <= pagination.total_pages; i++) {
+        html += `<button onclick="loadSuppliers(${i})" ${pagination.page === i ? 'class="active"' : ''}>${i}</button>`;
+    }
+    
+    // Next button
+    html += `<button onclick="loadSuppliers(${pagination.page + 1})" ${pagination.page === pagination.total_pages ? 'disabled' : ''}>Next</button>`;
+    
+    paginationDiv.innerHTML = html;
+}
+
+function searchSuppliers() {
+    const searchTerm = document.getElementById('search-input').value;
+    loadSuppliers(1, searchTerm);
+}
+
+function openModal(supplierId = null) {
+    const modal = document.getElementById('supplier-modal');
+    const form = document.getElementById('supplier-form');
+    const title = document.getElementById('modal-title');
+    
+    form.reset();
+    document.getElementById('supplier-id').value = '';
+    
+    if (supplierId) {
+        title.textContent = 'Edit Supplier';
+        // Load supplier data
+        fetch(`${API_BASE}/suppliers/${supplierId}`, {
+            headers: {
+                'X-CSRF-Token': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('supplier-id').value = data.data.id;
+                document.getElementById('supplier-name').value = data.data.name;
+                document.getElementById('contact-person').value = data.data.contact_person;
+                document.getElementById('supplier-email').value = data.data.email;
+                document.getElementById('supplier-phone').value = data.data.phone;
+                document.getElementById('supplier-address').value = data.data.address || '';
+            }
+        });
+    } else {
+        title.textContent = 'Add Supplier';
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('supplier-modal').classList.remove('show');
+}
+
+function saveSupplier(event) {
+    event.preventDefault();
+    
+    const supplierId = document.getElementById('supplier-id').value;
+    const formData = {
+        name: document.getElementById('supplier-name').value,
+        contact_person: document.getElementById('contact-person').value,
+        email: document.getElementById('supplier-email').value,
+        phone: document.getElementById('supplier-phone').value,
+        address: document.getElementById('supplier-address').value
+    };
+    
+    const url = supplierId ? `${API_BASE}/suppliers/${supplierId}` : `${API_BASE}/suppliers/`;
+    const method = supplierId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            loadSuppliers(currentPage);
+            showSuccess(data.message);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Failed to save supplier:', error);
+        showError('Failed to save supplier');
+    });
+}
+
+function editSupplier(id) {
+    openModal(id);
+}
+
+function deleteSupplier(id) {
+    if (!confirm('Are you sure you want to delete this supplier?')) {
+        return;
+    }
+    
+    fetch(`${API_BASE}/suppliers/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadSuppliers(currentPage);
+            showSuccess('Supplier deleted successfully');
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Failed to delete supplier:', error);
+        showError('Failed to delete supplier');
+    });
+}
+
+// Dashboard Functions
+function loadDashboardStats() {
+    // Load suppliers count
+    fetch(`${API_BASE}/suppliers/?limit=1`, {
+        headers: {
+            'X-CSRF-Token': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.pagination) {
+            document.getElementById('total-suppliers').textContent = data.pagination.total;
+        }
+    });
+}
+
+// Utility Functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showSuccess(message) {
+    alert('Success: ' + message);
+}
+
+function showError(message) {
+    alert('Error: ' + message);
+}
+
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all nav links
+    document.querySelectorAll('.sidebar nav a').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Show selected section
+    const section = document.getElementById(`${sectionName}-section`);
+    if (section) {
+        section.classList.add('active');
+    }
+    
+    // Add active class to clicked link
+    event.target.closest('a').classList.add('active');
+}
