@@ -156,7 +156,7 @@
         <span class="nav-icon">🏘</span> Properties
       </div>
       <div class="nav-item" onclick="showPage('contacts',this)">
-        <span class="nav-icon">👥</span> Contacts
+        <span class="nav-icon">👥</span> Suppliers
       </div>
       <div class="nav-item" onclick="showPage('projects',this)">
         <span class="nav-icon">📋</span> Projects
@@ -250,7 +250,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon purple">👥</div>
-          <div><div class="stat-value" id="stat-contacts">—</div><div class="stat-label">Contacts</div></div>
+          <div><div class="stat-value" id="stat-contacts">—</div><div class="stat-label">Suppliers</div></div>
         </div>
       </div>
 
@@ -260,7 +260,7 @@
         <div class="quick-actions">
           <button class="btn btn-secondary" onclick="showPage('comms',document.querySelector('[onclick*=comms]'))">⚙️ Build Subject Line</button>
           <button class="btn btn-secondary" onclick="showPage('properties',document.querySelector('[onclick*=properties]'))">🏘 View Properties</button>
-          <button class="btn btn-secondary" onclick="showPage('contacts',document.querySelector('[onclick*=contacts]'))">👥 Add Contact</button>
+          <button class="btn btn-secondary" onclick="showPage('contacts',document.querySelector('[onclick*=contacts]'))">👥 Add Supplier</button>
           <button class="btn btn-secondary" onclick="showPage('invoices',document.querySelector('[onclick*=invoices]'))">💰 Log Invoice</button>
           <button class="btn btn-secondary" onclick="showPage('projects',document.querySelector('[onclick*=projects]'))">📋 View Projects</button>
           <button class="btn btn-secondary" onclick="showPage('documents',document.querySelector('[onclick*=documents]'))">📁 Documents</button>
@@ -349,24 +349,24 @@
       </div>
     </div>
 
-    <!-- ======== CONTACTS ======== -->
+    <!-- ======== SUPPLIERS ======== -->
     <div id="page-contacts" class="page">
       <div class="page-header">
-        <div><h1>👥 Contacts</h1><p>Suppliers, tenants, agents, lawyers and trades</p></div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('contact-modal')">+ Add Contact</button>
+        <div><h1>👥 Suppliers</h1><p>Suppliers, tenants, agents, lawyers and trades</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('contact-modal')">+ Add Supplier</button>
       </div>
       <div class="card">
-        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search contacts…" oninput="filterTable(this,'contacts-tbody')" /></div>
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search suppliers…" oninput="filterTable(this,'contacts-tbody')" /></div>
         <table class="data-table">
           <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Contact</th><th>Notes</th><th></th></tr></thead>
           <tbody id="contacts-tbody"></tbody>
         </table>
       </div>
-      <!-- Add Contact Modal -->
+      <!-- Add Supplier Modal -->
       <div class="modal-overlay" id="contact-modal">
         <div class="modal">
           <div class="modal-header">
-            <div class="modal-title">Add Contact</div>
+            <div class="modal-title">Add Supplier</div>
             <button class="modal-close" onclick="closeModal('contact-modal')">✕</button>
           </div>
           <div class="form-grid">
@@ -387,7 +387,7 @@
             <div class="field-group form-full"><label>Notes</label><textarea id="c-notes" placeholder="Any notes about this contact…"></textarea></div>
           </div>
           <div class="flex gap-8 mt-16">
-            <button class="btn btn-primary" onclick="saveContact()">💾 Save Contact</button>
+            <button class="btn btn-primary" onclick="saveContact()">💾 Save Supplier</button>
             <button class="btn btn-ghost" onclick="closeModal('contact-modal')">Cancel</button>
           </div>
         </div>
