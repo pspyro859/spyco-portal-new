@@ -101,12 +101,13 @@ function displaySuppliers(suppliers) {
     const tbody = document.getElementById('suppliers-tbody');
     
     if (suppliers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No suppliers found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No suppliers found</td></tr>';
         return;
     }
     
     tbody.innerHTML = suppliers.map(supplier => `
         <tr>
+            <td><strong>${escapeHtml(supplier.code)}</strong></td>
             <td>${escapeHtml(supplier.name)}</td>
             <td>${escapeHtml(supplier.contact_person)}</td>
             <td>${escapeHtml(supplier.email)}</td>
@@ -173,6 +174,7 @@ function openModal(supplierId = null) {
         .then(data => {
             if (data.success) {
                 document.getElementById('supplier-id').value = data.data.id;
+                document.getElementById('supplier-code').value = data.data.code || '';
                 document.getElementById('supplier-name').value = data.data.name;
                 document.getElementById('contact-person').value = data.data.contact_person;
                 document.getElementById('supplier-email').value = data.data.email;
@@ -195,6 +197,8 @@ function saveSupplier(event) {
     event.preventDefault();
     
     const supplierId = document.getElementById('supplier-id').value;
+    const supplierCode = document.getElementById('supplier-code').value;
+    
     const formData = {
         name: document.getElementById('supplier-name').value,
         contact_person: document.getElementById('contact-person').value,
@@ -202,6 +206,11 @@ function saveSupplier(event) {
         phone: document.getElementById('supplier-phone').value,
         address: document.getElementById('supplier-address').value
     };
+    
+    // Only include code if it's provided (for editing existing suppliers)
+    if (supplierCode && supplierId) {
+        formData.code = supplierCode;
+    }
     
     const url = supplierId ? `${API_BASE}/suppliers/${supplierId}` : `${API_BASE}/suppliers/`;
     const method = supplierId ? 'PUT' : 'POST';

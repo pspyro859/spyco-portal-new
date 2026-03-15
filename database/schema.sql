@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Suppliers table
 CREATE TABLE IF NOT EXISTS suppliers (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(200) NOT NULL,
     contact_person VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     status ENUM('active', 'inactive', 'deleted') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_code (code),
     INDEX idx_name (name),
     INDEX idx_email (email),
     INDEX idx_status (status)
@@ -58,18 +60,18 @@ INSERT INTO users (username, password, email, full_name, role, status) VALUES
 ON DUPLICATE KEY UPDATE username=username;
 
 -- Insert sample suppliers for testing
-INSERT INTO suppliers (name, contact_person, email, phone, address, status) VALUES
-('Tech Solutions Pty Ltd', 'John Smith', 'john@techsolutions.com.au', '+61 2 9876 5432', '123 Tech Street, Sydney NSW 2000', 'active'),
-('Office Supplies Co', 'Jane Doe', 'jane@officesupplies.com', '+61 3 8765 4321', '456 Office Road, Melbourne VIC 3000', 'active'),
-('Digital Services Group', 'Mike Johnson', 'mike@digitalservices.com', '+61 4 7654 3210', '789 Digital Ave, Brisbane QLD 4000', 'active')
-ON DUPLICATE KEY UPDATE name=name;
+INSERT INTO suppliers (code, name, contact_person, email, phone, address, status) VALUES
+('SUP-00001', 'Tech Solutions Pty Ltd', 'John Smith', 'john@techsolutions.com.au', '+61 2 9876 5432', '123 Tech Street, Sydney NSW 2000', 'active'),
+('SUP-00002', 'Office Supplies Co', 'Jane Doe', 'jane@officesupplies.com', '+61 3 8765 4321', '456 Office Road, Melbourne VIC 3000', 'active'),
+('SUP-00003', 'Digital Services Group', 'Mike Johnson', 'mike@digitalservices.com', '+61 4 7654 3210', '789 Digital Ave, Brisbane QLD 4000', 'active')
+ON DUPLICATE KEY UPDATE code=code;
 
 -- Create views for common queries
 CREATE OR REPLACE VIEW active_suppliers AS
-SELECT id, name, contact_person, email, phone
+SELECT id, code, name, contact_person, email, phone
 FROM suppliers
 WHERE status = 'active'
-ORDER BY name;
+ORDER BY code;
 
 CREATE OR REPLACE VIEW active_users AS
 SELECT id, username, email, full_name, role

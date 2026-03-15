@@ -17,19 +17,19 @@ class Supplier {
     }
     
     public function getAll($limit = 50, $offset = 0, $search = null) {
-        $sql = "SELECT id, name, contact_person, email, phone, address, status, created_at 
+        $sql = "SELECT id, code, name, contact_person, email, phone, address, status, created_at 
                 FROM suppliers 
                 WHERE status != 'deleted'";
         
         $params = [];
         
         if ($search) {
-            $sql .= " AND (name LIKE ? OR contact_person LIKE ? OR email LIKE ?)";
+            $sql .= " AND (name LIKE ? OR contact_person LIKE ? OR email LIKE ? OR code LIKE ?)";
             $searchTerm = "%$search%";
-            $params = [$searchTerm, $searchTerm, $searchTerm];
+            $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
         }
         
-        $sql .= " ORDER BY name ASC LIMIT ? OFFSET ?";
+        $sql .= " ORDER BY code ASC LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
         
@@ -45,12 +45,25 @@ class Supplier {
         return $stmt->fetch();
     }
     
+    public function getByCode($code) {
+        $sql = "SELECT * FROM suppliers WHERE code = ? AND status != 'deleted' LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$code]);
+        return $stmt->fetch();
+    }
+    
     public function create($data) {
-        $sql = "INSERT INTO suppliers (name, contact_person, email, phone, address, status, created_at) 
-                VALUES (?, ?, ?, ?, ?, 'active', NOW())";
+        // Auto-generate code if not provided
+        if (!isset($data['code']) || empty($data['code'])) {
+            $data['code'] = $this->generateSupplierCode();
+        }
+        
+        $sql = "INSERT INTO suppliers (code, name, contact_person, email, phone, address, status, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
+            $data['code'],
             $data['name'],
             $data['contact_person'],
             $data['email'],
@@ -101,16 +114,38 @@ class Supplier {
         return $result['count'];
     }
     
+    /**
+     * Generate next supplier code
+     * Format: SUP-XXXXX (e.g., SUP-00001)
+     */
+    public function generateSupplierCode() {
+        $sql = "SELECT code FROM suppliers WHERE code LIKE 'SUP-%' ORDER BY code DESC LIMIT 1";
+        $stmt = $this->db->query($sql);
+        $lastSupplier = $stmt->fetch();
+        
+        if ($lastSupplier && !empty($lastSupplier['code'])) {
+            // Extract number from last code (e.g., SUP-00005 -> 5)
+            $lastNumber = (int)str_replace('SUP-', '', $lastSupplier['code']);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        // Format as 5-digit number with leading zeros
+        return sprintf('SUP-%05d', $newNumber);
+    }
+    
     public function search($query) {
-        $sql = "SELECT id, name, contact_person, email 
+        $sql = "SELECT id, code, name, contact_person, email 
                 FROM suppliers 
                 WHERE status = 'active' 
-                AND (name LIKE ? OR contact_person LIKE ? OR email LIKE ?) 
+                AND (name LIKE ? OR contact_person LIKE ? OR email LIKE ? OR code LIKE ?) 
+                ORDER BY code ASC 
                 LIMIT 20";
         
         $searchTerm = "%$query%";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([$searchTerm, $searchTerm, $searchTerm]);
+        $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
         return $stmt->fetchAll();
     }
 }

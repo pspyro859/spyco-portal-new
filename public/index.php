@@ -89,6 +89,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                                 <table class="data-table">
                                     <thead>
                                         <tr>
+                                            <th>Supplier Code</th>
                                             <th>Name</th>
                                             <th>Contact Person</th>
                                             <th>Email</th>
@@ -185,6 +186,12 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
             
             <form id="supplier-form" onsubmit="saveSupplier(event)">
                 <input type="hidden" id="supplier-id">
+                
+                <div class="form-group">
+                    <label for="supplier-code">Supplier Code</label>
+                    <input type="text" id="supplier-code" name="code" placeholder="Auto-generated if empty" readonly>
+                    <small style="color: #666;">Leave empty to auto-generate</small>
+                </div>
                 
                 <div class="form-group">
                     <label for="supplier-name">Name *</label>
