@@ -8,11 +8,13 @@ This update adds two major features to the Spyco Portal:
 ## What's New
 
 ### 1. Automatic Supplier Code Generation
-- **Format**: SUP-XXXXX (e.g., SUP-00001, SUP-00002, SUP-00003)
+- **Format**: XXX-XXXXX where XXX = first 3 letters of supplier name (e.g., TEC-00001 for "Tech Solutions Inc", MAT-00001 for "Materials Co")
 - **Behavior**: 
   - Codes are automatically generated when creating new suppliers
+  - The prefix is derived from the first 3 letters of the supplier name (uppercase)
+  - Sequential numbering is maintained per prefix
   - You can manually specify a code if needed
-  - Codes are unique and sequential
+  - Codes are unique and sequential within each prefix
   - Existing suppliers without codes can be migrated
 
 ### 2. Supplier Categories
@@ -50,6 +52,20 @@ This update adds two major features to the Spyco Portal:
 }
 ```
 
+### Code Generation Details
+- **Format**: XXX-XXXXX (e.g., TEC-00001, ELE-00001, SER-00001)
+- **Prefix**: First 3 letters of supplier name (uppercase)
+- **Numbering**: Sequential per prefix (e.g., TEC-00001, TEC-00002, TEC-00003)
+- **Special Handling**: 
+  - Names with fewer than 3 letters are padded with 'X'
+  - Special characters and numbers are removed from the prefix
+  - Examples:
+    - "Tech Solutions Inc" → TEC-00001
+    - "Electronics Co" → ELE-00001
+    - "Services LLC" → SER-00001
+    - "A & B Corp" → ABX-00001 (padded)
+    - "123 Company" → GEN-00001 (no letters)
+
 ### Updated Endpoint: `/api/suppliers`
 - **New Query Parameter**: `category` - Filter suppliers by category
 - **Example**: `/api/suppliers/?category=Electronics`
@@ -85,13 +101,15 @@ mysql -u your_username -p spyco_portal < database/schema.sql
 ### Step 2: Run Migration Script
 Run the migration script to update existing suppliers:
 ```bash
-mysql -u your_username -p spyco_portal < database/migrate_codes.sql
+mysql -u your_username -p spyco_portal < database/migrate_codes_name_based.sql
 ```
 
 This script will:
-1. Generate codes for suppliers without them
-2. Set "General" as the default category for suppliers without categories
-3. Display a summary of the migration
+1. Backup existing codes to a backup table
+2. Clear existing codes
+3. Generate new codes based on supplier names
+4. Set "General" as the default category for suppliers without categories
+5. Display a summary of the migration with code distribution
 
 ### Step 3: Deploy Updated Files
 Upload the updated files to your server:
@@ -123,7 +141,7 @@ Upload the updated files to your server:
   "message": "Supplier created successfully",
   "data": {
     "id": 10,
-    "code": "SUP-00010",
+    "code": "TEC-00001",
     "name": "Tech Solutions Inc",
     "category": "Electronics",
     ...
@@ -139,7 +157,7 @@ GET /api/suppliers/?category=Electronics
 ### Searching Suppliers
 The search now includes the supplier code:
 ```
-GET /api/suppliers/?search=SUP-00005
+GET /api/suppliers/?search=TEC-00001
 ```
 
 ## Troubleshooting
@@ -155,31 +173,50 @@ GET /api/suppliers/?search=SUP-00005
 
 ## Features Summary
 
-✅ Auto-generated supplier codes (SUP-XXXXX format)
+✅ Auto-generated supplier codes (XXX-XXXXX format based on name)
+✅ Prefix derived from first 3 letters of supplier name
+✅ Sequential numbering per prefix
 ✅ Supplier categorization with default "General" category
 ✅ Alphabetical sorting by category, then by name
 ✅ Dynamic category loading in forms
 ✅ Category filtering in API
-✅ Migration script for existing data
+✅ Migration script for existing data with backup
 ✅ Backward compatible with existing functionality
 
 ## Technical Details
 
 ### Code Generation Logic
 ```php
-public function generateSupplierCode() {
-    $sql = "SELECT code FROM suppliers WHERE code LIKE 'SUP-%' ORDER BY code DESC LIMIT 1";
-    $stmt = $this->db->query($sql);
+public function generateSupplierCode($supplierName = null) {
+    // Generate prefix from supplier name (first 3 letters, uppercase)
+    if ($supplierName && !empty($supplierName)) {
+        $cleanName = preg_replace('/[^a-zA-Z]/', '', $supplierName);
+        $prefix = strtoupper(substr($cleanName, 0, 3));
+        
+        // If name doesn't have enough letters, pad with 'X'
+        while (strlen($prefix) < 3) {
+            $prefix .= 'X';
+        }
+    } else {
+        $prefix = 'GEN'; // Default prefix if no name provided
+    }
+    
+    // Find the highest code with this prefix
+    $sql = "SELECT code FROM suppliers WHERE code LIKE ? ORDER BY code DESC LIMIT 1";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(["{$prefix}-%"]);
     $lastSupplier = $stmt->fetch();
     
     if ($lastSupplier && !empty($lastSupplier['code'])) {
-        $lastNumber = (int)str_replace('SUP-', '', $lastSupplier['code']);
+        $parts = explode('-', $lastSupplier['code']);
+        $lastNumber = (int)$parts[1];
         $newNumber = $lastNumber + 1;
     } else {
         $newNumber = 1;
     }
     
-    return sprintf('SUP-%05d', $newNumber);
+    // Format as XXX-XXXXX (prefix + 5-digit number)
+    return sprintf('%s-%05d', $prefix, $newNumber);
 }
 ```
 

@@ -3,10 +3,12 @@
 ## ✅ COMPLETED FEATURES
 
 ### 1. Automatic Supplier Code Generation
-- **Format**: SUP-XXXXX (e.g., SUP-00001, SUP-00002, SUP-00003)
-- **Behavior**: Auto-generates sequential codes when creating new suppliers
+- **Format**: XXX-XXXXX where XXX = first 3 letters of supplier name (e.g., TEC-00001, ELE-00001, MAT-00001)
+- **Behavior**: Auto-generates codes based on supplier name when creating new suppliers
+- **Prefix Logic**: First 3 letters of name (uppercase), padded with 'X' if needed
+- **Sequencing**: Sequential numbering per prefix (e.g., TEC-00001, TEC-00002, TEC-00003)
 - **Database**: Added `code` VARCHAR(20) UNIQUE field
-- **Migration**: Script to update existing suppliers with codes
+- **Migration**: Script to regenerate codes based on existing names
 
 ### 2. Supplier Categories
 - **Default**: "General" category for unclassified suppliers
@@ -59,7 +61,7 @@
   - Added indexes for `code` and `category`
 
 ### New Files
-- `database/migrate_codes.sql` - Migration script for existing data
+- `database/migrate_codes_name_based.sql` - Migration script for name-based codes
 - `CATEGORY_UPDATE_README.md` - Comprehensive documentation
 - `DEPLOYMENT_GUIDE.md` - Step-by-step deployment instructions
 
@@ -93,7 +95,8 @@ INDEX idx_category (category)
 - Manual code entry required
 
 ### After:
-- ✅ Auto-generated codes (SUP-XXXXX)
+- ✅ Auto-generated codes (XXX-XXXXX based on name)
+- ✅ Meaningful prefixes from supplier names
 - ✅ Organized by categories
 - ✅ Alphabetical sorting by category
 - ✅ Automatic code assignment
@@ -121,9 +124,13 @@ INDEX idx_category (category)
 
 ### Code Generation Logic:
 ```php
-// Gets highest existing code and increments
-// Format: SUP-XXXXX (5-digit zero-padded)
-// Example: SUP-00001 → SUP-00002 → SUP-00003
+// Extracts first 3 letters from supplier name (uppercase)
+// Generates sequential codes per prefix
+// Format: XXX-XXXXX (3-letter prefix + 5-digit number)
+// Examples: 
+//   "Tech Solutions" → TEC-00001 → TEC-00002
+//   "Electronics Co" → ELE-00001 → ELE-00002
+//   "A & B Corp" → ABX-00001 (padded with X)
 ```
 
 ### Category Sorting:
@@ -156,10 +163,12 @@ ORDER BY category ASC, name ASC
 ## ✨ KEY BENEFITS
 
 1. **Automation**: No manual code entry required
-2. **Organization**: Suppliers grouped by category
-3. **Consistency**: Standardized code format
-4. **Searchability**: Easy to find suppliers by code or category
-5. **Scalability**: System grows with your business
+2. **Meaningful Codes**: Codes reflect supplier names (e.g., TEC for Tech)
+3. **Organization**: Suppliers grouped by category
+4. **Consistency**: Standardized code format
+5. **Searchability**: Easy to find suppliers by code or category
+6. **Scalability**: System grows with your business
+7. **User-Friendly**: Matches existing workflow conventions
 
 ## 📞 SUPPORT
 

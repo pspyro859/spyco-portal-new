@@ -41,8 +41,8 @@ mysql -u your_db_user -p your_db_name < database/schema.sql
 
 ### Step 4: Run Migration Script
 ```bash
-# This will generate codes for existing suppliers and set default categories
-mysql -u your_db_user -p your_db_name < database/migrate_codes.sql
+# This will regenerate codes based on supplier names and set default categories
+mysql -u your_db_user -p your_db_name < database/migrate_codes_name_based.sql
 ```
 
 ### Step 5: Verify the Update
@@ -52,8 +52,19 @@ mysql -u your_db_user -p your_db_name -e "
 SELECT id, code, name, category 
 FROM suppliers 
 WHERE status != 'deleted' 
-ORDER BY category ASC, name ASC 
+ORDER BY code ASC 
 LIMIT 10;
+"
+
+# Check code distribution by prefix
+mysql -u your_db_user -p your_db_name -e "
+SELECT 
+    SUBSTRING(code, 1, 3) as prefix,
+    COUNT(*) as count
+FROM suppliers 
+WHERE status != 'deleted' AND code IS NOT NULL
+GROUP BY SUBSTRING(code, 1, 3)
+ORDER BY prefix;
 "
 ```
 
@@ -67,8 +78,9 @@ LIMIT 10;
    - Go to Suppliers section
    - Click "Add Supplier"
    - Leave the "Supplier Code" field empty
+   - Fill in supplier name (e.g., "Tech Solutions Inc")
    - Fill in other details and save
-   - Verify a code was automatically generated (e.g., SUP-00001)
+   - Verify a code was automatically generated based on the name (e.g., TEC-00001)
 
 2. **Test Categories**:
    - Add a new supplier
@@ -83,15 +95,16 @@ LIMIT 10;
 ## What to Expect
 
 ### New Features You'll See:
-1. **Supplier Code Column** - First column in the table showing auto-generated codes
+1. **Supplier Code Column** - First column in the table showing name-based codes (e.g., TEC-00001)
 2. **Category Column** - Second column showing supplier categories
 3. **Category Dropdown** - When adding/editing suppliers, you'll see a category selector
-4. **Auto-Generated Codes** - New suppliers get codes automatically in SUP-XXXXX format
+4. **Auto-Generated Codes** - New suppliers get codes automatically based on their name (XXX-XXXXX format)
 
 ### Data Migration:
-- All existing suppliers will receive auto-generated codes
+- All existing suppliers will receive codes based on their names (e.g., Tech Solutions → TEC-00001)
 - Suppliers without categories will be set to "General"
 - Suppliers will be sorted alphabetically by category, then by name
+- Previous codes are backed up to `suppliers_codes_backup` table
 
 ## Troubleshooting
 
@@ -101,8 +114,8 @@ LIMIT 10;
 ### Issue: "Column 'category' doesn't exist"
 **Solution**: The database schema wasn't updated. Run Step 3 again.
 
-### Issue: Existing suppliers don't have codes
-**Solution**: Run the migration script (Step 4) again.
+### Issue: Existing suppliers don't have codes or codes look wrong
+**Solution**: Run the name-based migration script (Step 4) again. This will regenerate all codes based on supplier names.
 
 ### Issue: Suppliers not sorted by category
 **Solution**: 

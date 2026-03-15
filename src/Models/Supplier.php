@@ -60,7 +60,7 @@ class Supplier {
     public function create($data) {
         // Auto-generate code if not provided
         if (!isset($data['code']) || empty($data['code'])) {
-            $data['code'] = $this->generateSupplierCode();
+            $data['code'] = $this->generateSupplierCode($data['name']);
         }
         
         // Set default category if not provided
@@ -143,23 +143,41 @@ class Supplier {
     
     /**
      * Generate next supplier code
-     * Format: SUP-XXXXX (e.g., SUP-00001)
+     * Format: XXX-XXXXX where XXX are first 3 letters of supplier name (uppercase)
+     * Example: TEC-00001 for "Tech Solutions Inc"
      */
-    public function generateSupplierCode() {
-        $sql = "SELECT code FROM suppliers WHERE code LIKE 'SUP-%' ORDER BY code DESC LIMIT 1";
-        $stmt = $this->db->query($sql);
+    public function generateSupplierCode($supplierName = null) {
+        // Generate prefix from supplier name (first 3 letters, uppercase)
+        if ($supplierName && !empty($supplierName)) {
+            // Remove special characters and spaces, keep only letters
+            $cleanName = preg_replace('/[^a-zA-Z]/', '', $supplierName);
+            $prefix = strtoupper(substr($cleanName, 0, 3));
+            
+            // If name doesn't have enough letters, pad with 'X'
+            while (strlen($prefix) < 3) {
+                $prefix .= 'X';
+            }
+        } else {
+            $prefix = 'GEN'; // Default prefix if no name provided
+        }
+        
+        // Find the highest code with this prefix
+        $sql = "SELECT code FROM suppliers WHERE code LIKE ? ORDER BY code DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(["{$prefix}-%"]);
         $lastSupplier = $stmt->fetch();
         
         if ($lastSupplier && !empty($lastSupplier['code'])) {
-            // Extract number from last code (e.g., SUP-00005 -> 5)
-            $lastNumber = (int)str_replace('SUP-', '', $lastSupplier['code']);
+            // Extract number from last code (e.g., TEC-00005 -> 5)
+            $parts = explode('-', $lastSupplier['code']);
+            $lastNumber = (int)$parts[1];
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
         
-        // Format as 5-digit number with leading zeros
-        return sprintf('SUP-%05d', $newNumber);
+        // Format as XXX-XXXXX (prefix + 5-digit number)
+        return sprintf('%s-%05d', $prefix, $newNumber);
     }
     
     public function search($query) {
