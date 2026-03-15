@@ -160,6 +160,9 @@ function openModal(supplierId = null) {
     form.reset();
     document.getElementById('supplier-id').value = '';
     
+    // Reset manual flag for auto-generation
+    document.getElementById('supplier-code').dataset.manual = '';
+    
     // Load categories
     loadCategories();
     
@@ -264,8 +267,8 @@ function saveSupplier(event) {
         address: document.getElementById('supplier-address').value
     };
     
-    // Only include code if it's provided (for editing existing suppliers)
-    if (supplierCode && supplierId) {
+    // Include code for both new and existing suppliers
+    if (supplierCode) {
         formData.code = supplierCode;
     }
     
