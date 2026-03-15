@@ -6,11 +6,8 @@ let currentPage = 1;
 let itemsPerPage = 10;
 let csrfToken = '';
 
-// Initialize application
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is authenticated
-    checkAuthentication();
-});
+// Initialize application - Check authentication on load
+checkAuthentication();
 
 // Authentication Functions
 function checkAuthentication() {
@@ -223,8 +220,8 @@ function loadCategories() {
     .catch(error => console.error('Failed to load categories:', error));
 }
 
-// Auto-generate code based on supplier name
-document.addEventListener('DOMContentLoaded', function() {
+// Auto-generate code based on supplier name - Set up when page loads
+function setupCodeGeneration() {
     const nameInput = document.getElementById('supplier-name');
     const codeInput = document.getElementById('supplier-code');
     
@@ -247,7 +244,10 @@ document.addEventListener('DOMContentLoaded', function() {
             this.dataset.manuallyEdited = 'true';
         });
     }
-});
+}
+
+// Call setup when page loads
+setupCodeGeneration();
 
 // Generate code from name (XXXX-X format)
 function generateCodeFromName(name) {
