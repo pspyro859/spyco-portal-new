@@ -230,10 +230,10 @@ function generateCode() {
         // Check if user has manually typed in the code field
         if (!codeInput.dataset.manual) {
             const cleanName = nameInput.value.replace(/[^a-zA-Z]/g, '');
-            let prefix = cleanName.substring(0, 4).toUpperCase();
+            let prefix = cleanName.substring(0, 3).toUpperCase();
             
             // Pad with 'X' if needed
-            while (prefix.length < 4) {
+            while (prefix.length < 3) {
                 prefix += 'X';
             }
             

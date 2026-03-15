@@ -325,7 +325,7 @@ function showPage(pageId, navEl) {
   const titles = {
     dashboard:  'Dashboard',
     properties: 'Properties',
-    contacts:   'Contacts',
+    contacts:   'Suppliers',
     projects:   'Projects',
     invoices:   'Invoices',
     documents:  'Documents',
