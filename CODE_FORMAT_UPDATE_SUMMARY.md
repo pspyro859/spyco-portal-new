@@ -2,27 +2,28 @@
 
 ## What Changed?
 
-The supplier code format has been updated from **SUP-XXXXX** to **XXX-XXXXX** where the prefix (XXX) is derived from the first 3 letters of the supplier name.
+The supplier code format has been updated from **SUP-XXXXX** to **XXXX-XXXX** where the prefix (XXXX) is derived from the first 4 letters of the supplier name.
 
 ## Before vs After
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| **Format** | SUP-XXXXX | XXX-XXXXX |
-| **Example** | SUP-00001 | TEC-00001 |
-| **Prefix** | Fixed "SUP" | Dynamic from name |
+| **Format** | SUP-XXXXX | XXXX-XXXX |
+| **Example** | SUP-00001 | TECH-0001 |
+| **Prefix** | Fixed "SUP" | Dynamic from name (4 letters) |
+| **Numbers** | 5 digits | 4 digits |
 | **Meaning** | Generic | Name-based |
-| **Example Codes** | SUP-00001, SUP-00002 | TEC-00001, ELE-00001, MAT-00001 |
+| **Example Codes** | SUP-00001, SUP-00002 | TECH-0001, ELEC-0001, MATE-0001 |
 
 ## Real-World Examples
 
 | Supplier Name | Old Code | New Code |
 |---------------|----------|----------|
-| Tech Solutions Inc | SUP-00001 | TEC-00001 |
-| Electronics Co | SUP-00002 | ELE-00001 |
-| Materials Ltd | SUP-00003 | MAT-00001 |
-| Services LLC | SUP-00004 | SER-00001 |
-| Software Inc | SUP-00005 | SOF-00001 |
+| Tech Solutions Inc | SUP-00001 | TECH-0001 |
+| Electronics Co | SUP-00002 | ELEC-0001 |
+| Materials Ltd | SUP-00003 | MATE-0001 |
+| Services LLC | SUP-00004 | SERV-0001 |
+| Software Inc | SUP-00005 | SOFT-0001 |
 
 ## Benefits of New Format
 
@@ -49,11 +50,12 @@ The supplier code format has been updated from **SUP-XXXXX** to **XXX-XXXXX** wh
 
 | Input | Prefix | Code |
 |-------|--------|------|
-| "Tech Solutions" | TEC | TEC-00001 |
-| "A & B Corp" | ABX | ABX-00001 |
-| "123 Company" | COM | COM-00001 |
-| "AB Ltd" | ABX | ABX-00001 |
-| "NoLetters123" | GEN | GEN-00001 |
+| "Tech Solutions" | TECH | TECH-0001 |
+| "A & B Corp" | ABXX | ABXX-0001 |
+| "123 Company" | COMP | COMP-0001 |
+| "AB Ltd" | ABXX | ABXX-0001 |
+| "A Corp" | AXXX | AXXX-0001 |
+| "NoLetters123" | GENX | GENX-0001 |
 
 ## What Happens When You Deploy?
 
@@ -71,9 +73,9 @@ SUP-00002 → Electronics Co
 SUP-00003 → Materials Ltd
 
 After:
-TEC-00001 → Tech Solutions Inc
-ELE-00001 → Electronics Co
-MAT-00001 → Materials Ltd
+TECH-0001 → Tech Solutions Inc
+ELEC-0001 → Electronics Co
+MATE-0001 → Materials Ltd
 ```
 
 ## Files Changed
@@ -83,7 +85,7 @@ MAT-00001 → Materials Ltd
 - Documentation files updated to reflect new format
 
 ### New:
-- `database/migrate_codes_name_based.sql` - New migration script
+- `database/migrate_codes_4digit.sql` - New migration script
 - `NAME_BASED_CODES_README.md` - Comprehensive code format guide
 
 ## Deployment Steps
@@ -96,7 +98,7 @@ git pull origin main
 
 ### 2. Run Migration Script
 ```bash
-mysql -u your_user -p your_db < database/migrate_codes_name_based.sql
+mysql -u your_user -p your_db < database/migrate_codes_4digit.sql
 ```
 
 ### 3. Verify Changes

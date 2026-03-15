@@ -143,22 +143,22 @@ class Supplier {
     
     /**
      * Generate next supplier code
-     * Format: XXX-XXXXX where XXX are first 3 letters of supplier name (uppercase)
-     * Example: TEC-00001 for "Tech Solutions Inc"
+     * Format: XXXX-XXXX where XXXX are first 4 letters of supplier name (uppercase)
+     * Example: TECH-0001 for "Tech Solutions Inc"
      */
     public function generateSupplierCode($supplierName = null) {
-        // Generate prefix from supplier name (first 3 letters, uppercase)
+        // Generate prefix from supplier name (first 4 letters, uppercase)
         if ($supplierName && !empty($supplierName)) {
             // Remove special characters and spaces, keep only letters
             $cleanName = preg_replace('/[^a-zA-Z]/', '', $supplierName);
-            $prefix = strtoupper(substr($cleanName, 0, 3));
+            $prefix = strtoupper(substr($cleanName, 0, 4));
             
             // If name doesn't have enough letters, pad with 'X'
-            while (strlen($prefix) < 3) {
+            while (strlen($prefix) < 4) {
                 $prefix .= 'X';
             }
         } else {
-            $prefix = 'GEN'; // Default prefix if no name provided
+            $prefix = 'GENX'; // Default prefix if no name provided
         }
         
         // Find the highest code with this prefix
@@ -168,7 +168,7 @@ class Supplier {
         $lastSupplier = $stmt->fetch();
         
         if ($lastSupplier && !empty($lastSupplier['code'])) {
-            // Extract number from last code (e.g., TEC-00005 -> 5)
+            // Extract number from last code (e.g., TECH-0005 -> 5)
             $parts = explode('-', $lastSupplier['code']);
             $lastNumber = (int)$parts[1];
             $newNumber = $lastNumber + 1;
@@ -176,8 +176,8 @@ class Supplier {
             $newNumber = 1;
         }
         
-        // Format as XXX-XXXXX (prefix + 5-digit number)
-        return sprintf('%s-%05d', $prefix, $newNumber);
+        // Format as XXXX-XXXX (prefix + 4-digit number)
+        return sprintf('%s-%04d', $prefix, $newNumber);
     }
     
     public function search($query) {

@@ -41,8 +41,8 @@ mysql -u your_db_user -p your_db_name < database/schema.sql
 
 ### Step 4: Run Migration Script
 ```bash
-# This will regenerate codes based on supplier names and set default categories
-mysql -u your_db_user -p your_db_name < database/migrate_codes_name_based.sql
+# This will regenerate codes based on supplier names (4 letters + 4 digits) and set default categories
+mysql -u your_db_user -p your_db_name < database/migrate_codes_4digit.sql
 ```
 
 ### Step 5: Verify the Update
@@ -80,7 +80,7 @@ ORDER BY prefix;
    - Leave the "Supplier Code" field empty
    - Fill in supplier name (e.g., "Tech Solutions Inc")
    - Fill in other details and save
-   - Verify a code was automatically generated based on the name (e.g., TEC-00001)
+   - Verify a code was automatically generated based on the name (e.g., TECH-0001)
 
 2. **Test Categories**:
    - Add a new supplier
@@ -95,10 +95,10 @@ ORDER BY prefix;
 ## What to Expect
 
 ### New Features You'll See:
-1. **Supplier Code Column** - First column in the table showing name-based codes (e.g., TEC-00001)
+1. **Supplier Code Column** - First column in the table showing name-based codes (e.g., TECH-0001)
 2. **Category Column** - Second column showing supplier categories
 3. **Category Dropdown** - When adding/editing suppliers, you'll see a category selector
-4. **Auto-Generated Codes** - New suppliers get codes automatically based on their name (XXX-XXXXX format)
+4. **Auto-Generated Codes** - New suppliers get codes automatically based on their name (4 letters + 4 digits)
 
 ### Data Migration:
 - All existing suppliers will receive codes based on their names (e.g., Tech Solutions → TEC-00001)

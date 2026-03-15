@@ -24,27 +24,27 @@ Supplier codes are now automatically generated based on the supplier's name, mak
 ## How It Works
 
 ### 1. Prefix Generation
-- Takes the first 3 letters from the supplier name
+- Takes the first 4 letters from the supplier name
 - Converts to uppercase
 - Removes special characters and numbers
-- Pads with 'X' if name has fewer than 3 letters
+- Pads with 'X' if name has fewer than 4 letters
 
 ### 2. Sequential Numbering
 - Each prefix has its own sequence
-- Starts at 00001 for each unique prefix
+- Starts at 0001 for each unique prefix
 - Increments by 1 for each new supplier with the same prefix
 
 ### Examples of Sequences:
 ```
-TEC-00001  (Tech Solutions Inc)
-TEC-00002  (Tech Masters)
-TEC-00003  (Tech World)
+TECH-0001  (Tech Solutions Inc)
+TECH-0002  (Tech Masters)
+TECH-0003  (Tech World)
 
-ELE-00001  (Electronics Co)
-ELE-00002  (Electronics Plus)
+ELEC-0001  (Electronics Co)
+ELEC-0002  (Electronics Plus)
 
-MAT-00001  (Materials Ltd)
-MAT-00002  (Materials Global)
+MATE-0001  (Materials Ltd)
+MATE-0002  (Materials Global)
 ```
 
 ## Special Cases
@@ -53,32 +53,39 @@ MAT-00002  (Materials Global)
 **Input**: "A & B Corporation"
 **Process**: 
 1. Remove special characters → "AB Corporation"
-2. Take first 3 letters → "AB"
-3. Pad with 'X' → "ABX"
-**Output**: ABX-00001
+2. Take first 4 letters → "ABC"
+3. Pad with 'X' → "ABCX"
+**Output**: ABCX-0001
 
 ### Case 2: Names Starting with Numbers
 **Input**: "123 Company"
 **Process**:
 1. Remove numbers → "Company"
-2. Take first 3 letters → "COM"
+2. Take first 4 letters → "COMP"
 3. No padding needed
-**Output**: COM-00001
+**Output**: COMP-0001
 
 ### Case 3: Names with No Letters
 **Input**: "123 & 456"
 **Process**:
 1. Remove numbers and special characters → ""
 2. No letters found
-3. Use "GEN" (generic)
-**Output**: GEN-00001
+3. Use "GENX" (generic)
+**Output**: GENX-0001
 
 ### Case 4: Very Short Names
 **Input**: "AB Corp"
 **Process**:
-1. Take first 3 letters → "AB"
-2. Pad with 'X' → "ABX"
-**Output**: ABX-00001
+1. Take first 4 letters → "ABC"
+2. Pad with 'X' → "ABCX"
+**Output**: ABCX-0001
+
+### Case 5: Short Names
+**Input**: "A Corp"
+**Process**:
+1. Take first 4 letters → "A"
+2. Pad with 'X' → "AXXX"
+**Output**: AXXX-0001
 
 ## Benefits
 
@@ -109,7 +116,7 @@ You can still manually specify a supplier code if needed:
 ```javascript
 // POST /api/suppliers/
 {
-  "code": "CUSTOM-00001",
+  "code": "CUST-0001",
   "name": "Custom Supplier",
   "category": "General",
   "contact_person": "John Doe",
@@ -120,7 +127,7 @@ You can still manually specify a supplier code if needed:
 
 ## Migration
 
-When you run the migration script (`migrate_codes_name_based.sql`):
+When you run the migration script (`migrate_codes_4digit.sql`):
 
 1. **Backup**: Existing codes are backed up to `suppliers_codes_backup` table
 2. **Regenerate**: All codes are regenerated based on supplier names
@@ -144,15 +151,15 @@ public function generateSupplierCode($supplierName = null) {
         // Remove everything except letters
         $cleanName = preg_replace('/[^a-zA-Z]/', '', $supplierName);
         
-        // Take first 3 letters and convert to uppercase
-        $prefix = strtoupper(substr($cleanName, 0, 3));
+        // Take first 4 letters and convert to uppercase
+        $prefix = strtoupper(substr($cleanName, 0, 4));
         
         // Pad with 'X' if needed
-        while (strlen($prefix) < 3) {
+        while (strlen($prefix) < 4) {
             $prefix .= 'X';
         }
     } else {
-        $prefix = 'GEN'; // Default prefix
+        $prefix = 'GENX'; // Default prefix
     }
     
     // Step 2: Find the highest code with this prefix
@@ -170,8 +177,8 @@ public function generateSupplierCode($supplierName = null) {
         $newNumber = 1;
     }
     
-    // Step 4: Format as XXX-XXXXX
-    return sprintf('%s-%05d', $prefix, $newNumber);
+    // Step 4: Format as XXXX-XXXX
+    return sprintf('%s-%04d', $prefix, $newNumber);
 }
 ```
 
