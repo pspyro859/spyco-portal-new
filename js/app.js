@@ -106,6 +106,32 @@ function doGoogleLogin() {
   window.location.href = '/api/auth/login';
 }
 
+// Simple username/password login
+function doSimpleLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  
+  // Default credentials: jimmy / spyco2024
+  const validUsers = {
+    'jimmy': { password: 'spyco2024', role: 'admin', name: 'Jimmy' },
+    'peter': { password: 'spyco2024', role: 'admin', name: 'Peter' },
+    'admin': { password: 'admin123', role: 'admin', name: 'Admin' }
+  };
+  
+  const userLower = user.toLowerCase();
+  if (validUsers[userLower] && validUsers[userLower].password === pass) {
+    const userData = { user: userLower, role: validUsers[userLower].role, name: validUsers[userLower].name };
+    DB.setSession(userData);
+    DB.seedAll();
+    showApp(userData);
+    loadLocalData();
+  } else {
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = 'Invalid username or password';
+    errEl.style.display = 'block';
+  }
+}
+
 async function doLogout() {
   try {
     await API.logout();
