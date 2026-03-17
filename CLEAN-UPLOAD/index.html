@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spyco Group Portal</title>
+  <link rel="stylesheet" href="css/portal.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-152x152.png" />
+  <link rel="icon" type="image/png" href="assets/icons/icon-96x96.png" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Spyco Portal" />
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+
+<!-- ============ PWA INSTALL BANNER ============ -->
+<div id="pwa-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1e2a45; border:1px solid #2a3a5c; border-radius:12px; padding:14px 20px; z-index:9999; align-items:center; gap:14px; box-shadow:0 8px 32px rgba(0,0,0,0.5); max-width:420px; width:90%;">
+  <img src="assets/icons/icon-72x72.png" style="width:40px;height:40px;border-radius:8px;" />
+  <div style="flex:1;">
+    <div style="font-weight:700;font-size:0.88rem;color:#fff;">Install Spyco Portal</div>
+    <div style="font-size:0.75rem;color:#9a9ab0;margin-top:2px;">Add to your home screen for quick access</div>
+  </div>
+  <button onclick="installPWA()" style="background:#e94560;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.82rem;cursor:pointer;">Install</button>
+  <button onclick="document.getElementById('pwa-banner').style.display='none'" style="background:transparent;color:#9a9ab0;border:none;font-size:1.2rem;cursor:pointer;">✕</button>
+</div>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div id="login-page">
+
+  <!-- Decorative orb -->
+  <div class="login-bg-orb2"></div>
+
+  <!-- LEFT — Branding panel -->
+  <div class="login-brand-panel">
+    <div style="margin-bottom:40px;">
+      <img src="https://www.spyco.com.au/img/spyco_logo_full.png" alt="Spyco"
+        style="max-width:160px;max-height:52px;object-fit:contain;filter:brightness(1.2);"
+        onerror="this.style.display='none'" />
+    </div>
+    <h1>Spyco Group<br /><span>Portal</span></h1>
+    <p>Your all-in-one internal platform for managing properties, contacts, projects, invoices and communications — built for the Spyco Group team.</p>
+    <div class="login-brand-features">
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">🏘</div>
+        <span>Full property portfolio management</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">⚙️</div>
+        <span>SPY COMMS subject line builder</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">📋</div>
+        <span>Projects, invoices &amp; document tracking</span>
+      </div>
+      <div class="login-brand-feature">
+        <div class="login-brand-feature-icon">☁️</div>
+        <span>Google Drive as your database</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT — Login card panel -->
+  <div class="login-card-panel">
+    <div class="login-card">
+
+      <!-- Logo -->
+      <div class="login-logo">
+        <img src="https://www.spyco.com.au/img/spyco_logo_full.png" alt="Spyco"
+          onerror="this.style.display='none';document.getElementById('login-logo-fallback').style.display='block'" />
+        <div id="login-logo-fallback" style="display:none;font-size:1.8rem;font-weight:900;letter-spacing:4px;color:#fff;">SPY<span style="color:#e94560;">CO</span></div>
+      </div>
+
+      <!-- ── SIGN IN PANEL ── -->
+      <div id="signin-panel">
+        <h2 class="login-title">Welcome back</h2>
+        <p class="login-subtitle">Sign in with your Google account to access the portal</p>
+
+        <div class="login-error" id="login-error"></div>
+
+        <!-- Google Sign-In Button -->
+        <button class="login-btn google-btn" id="google-login-btn" onclick="doGoogleLogin()" style="display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#333;border:1px solid #ddd;">
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Sign in with Google
+        </button>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
+          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;line-height:1.6;">
+            <strong style="color:var(--gold);">✨ Secure & Simple</strong><br>
+            Your data is stored in your own Google Drive.<br>
+            No passwords to remember — just use your Google account.
+          </p>
+        </div>
+
+        <p class="login-footer" style="margin-top:20px;">Spyco Group &mdash; Internal Use Only</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="https://www.spyco.com.au/img/spyco_logo_full.png" alt="Spyco"
+        onerror="this.style.display='none';document.getElementById('sb-logo-fallback').style.display='block'" />
+      <div id="sb-logo-fallback" style="display:none;font-weight:900;letter-spacing:2px;color:#fff;font-size:1rem;">SPY<span style="color:#e94560;">CO</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">🏠</span> Dashboard
+      </div>
+
+      <div class="nav-section-label">Operations</div>
+      <div class="nav-item" onclick="showPage('properties',this)">
+        <span class="nav-icon">🏘</span> Properties
+      </div>
+      <div class="nav-item" onclick="showPage('contacts',this)">
+        <span class="nav-icon">👥</span> Suppliers
+      </div>
+      <div class="nav-item" onclick="showPage('projects',this)">
+        <span class="nav-icon">📋</span> Projects
+      </div>
+      <div class="nav-item" onclick="showPage('invoices',this)">
+        <span class="nav-icon">💰</span> Invoices
+      </div>
+      <div class="nav-item" onclick="showPage('documents',this)">
+        <span class="nav-icon">📁</span> Documents
+      </div>
+
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item" onclick="showPage('comms',this)">
+        <span class="nav-icon">⚙️</span> SPY COMMS
+      </div>
+      <div class="nav-item" onclick="showPage('email',this)">
+        <span class="nav-icon">✉️</span> Email
+      </div>
+      <div class="nav-item" onclick="showPage('drive',this)">
+        <span class="nav-icon">☁️</span> Google Drive
+      </div>
+
+      <div class="nav-section-label">Settings</div>
+      <div class="nav-item" id="admin-nav" style="display:none;" onclick="showPage('admin',this)">
+        <span class="nav-icon">🛡</span> Admin
+      </div>
+      <div class="nav-item" onclick="openPwModal()">
+        <span class="nav-icon">🔑</span> Change Password
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div>
+          <div class="user-name" id="user-display">—</div>
+          <div class="user-role" id="user-role-label">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm w-full" style="justify-content:center;" onclick="doLogout()">🔒 Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="sidebar-toggle" style="display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer;" onclick="toggleSidebar()">☰</button>
+      <div>
+        <div class="header-title" id="header-title">Dashboard <span id="header-sub"></span></div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="header-date" style="font-size:0.78rem;color:var(--text-muted);"></span>
+      <div style="width:1px;height:20px;background:var(--card-border);"></div>
+      <span style="font-size:0.78rem;color:var(--text-muted);" id="header-user"></span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ======== DASHBOARD ======== -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <h1>Good <span id="greeting-time">morning</span>, <span id="greeting-name">—</span> 👋</h1>
+          <p>Here's what's happening across the Spyco Group today.</p>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-primary btn-sm" onclick="showPage('comms',document.querySelector('[onclick*=comms]'))">⚙️ New Subject Line</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">🏘</div>
+          <div><div class="stat-value">15</div><div class="stat-label">Properties</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div><div class="stat-value" id="stat-tenanted">—</div><div class="stat-label">Tenanted</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">📋</div>
+          <div><div class="stat-value" id="stat-projects">—</div><div class="stat-label">Active Projects</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">💰</div>
+          <div><div class="stat-value" id="stat-invoices">—</div><div class="stat-label">Unpaid Invoices</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">👥</div>
+          <div><div class="stat-value" id="stat-contacts">—</div><div class="stat-label">Suppliers</div></div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="card">
+        <div class="card-title">Quick Actions</div>
+        <div class="quick-actions">
+          <button class="btn btn-secondary" onclick="showPage('comms',document.querySelector('[onclick*=comms]'))">⚙️ Build Subject Line</button>
+          <button class="btn btn-secondary" onclick="showPage('properties',document.querySelector('[onclick*=properties]'))">🏘 View Properties</button>
+          <button class="btn btn-secondary" onclick="showPage('contacts',document.querySelector('[onclick*=contacts]'))">👥 Add Supplier</button>
+          <button class="btn btn-secondary" onclick="showPage('invoices',document.querySelector('[onclick*=invoices]'))">💰 Log Invoice</button>
+          <button class="btn btn-secondary" onclick="showPage('projects',document.querySelector('[onclick*=projects]'))">📋 View Projects</button>
+          <button class="btn btn-secondary" onclick="showPage('documents',document.querySelector('[onclick*=documents]'))">📁 Documents</button>
+        </div>
+      </div>
+
+      <!-- DATA EXPORT -->
+      <div class="card">
+        <div class="card-title">📤 Export Data</div>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Download your data as CSV files or create a full backup.</p>
+        <div class="quick-actions">
+          <button class="btn btn-ghost" onclick="exportData('properties')">📊 Properties CSV</button>
+          <button class="btn btn-ghost" onclick="exportData('contacts')">👥 Contacts CSV</button>
+          <button class="btn btn-ghost" onclick="exportData('projects')">📋 Projects CSV</button>
+          <button class="btn btn-ghost" onclick="exportData('invoices')">💰 Invoices CSV</button>
+          <button class="btn btn-secondary" onclick="exportData('report')">📑 Summary Report</button>
+          <button class="btn btn-primary" onclick="exportData('all')">💾 Full Backup (JSON)</button>
+        </div>
+      </div>
+
+      <!-- RECENT ACTIVITY + PROPERTIES SUMMARY -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Recent Activity</div>
+          <div id="activity-feed">
+            <div class="activity-item"><div class="activity-dot"></div><div><div class="activity-text">Portal launched — Spyco Group</div><div class="activity-time">Today</div></div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:#22c55e;"></div><div><div class="activity-text">SPY COMMS tool integrated</div><div class="activity-time">Today</div></div></div>
+            <div class="activity-item"><div class="activity-dot" style="background:#f5a623;"></div><div><div class="activity-text">PWA enabled — install on any device</div><div class="activity-time">Today</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Property Snapshot</div>
+          <table class="data-table">
+            <thead><tr><th>Site</th><th>Status</th><th>Entity</th></tr></thead>
+            <tbody>
+              <tr><td>12 Lloyd Rd</td><td><span class="badge badge-green">Tenanted</span></td><td>SPY</td></tr>
+              <tr><td>66 Charlton St</td><td><span class="badge badge-green">Tenanted</span></td><td>SPY</td></tr>
+              <tr><td>49 Morpeth Rd</td><td><span class="badge badge-gold">Development</span></td><td>SPY</td></tr>
+              <tr><td>33 Curry St</td><td><span class="badge badge-green">Tenanted</span></td><td>KAL</td></tr>
+              <tr><td>113 Durham Rd</td><td><span class="badge badge-grey">Vacant</span></td><td>REV</td></tr>
+            </tbody>
+          </table>
+          <button class="btn btn-ghost btn-sm mt-16" onclick="showPage('properties',document.querySelector('[onclick*=properties]'))">View All Properties →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PROPERTIES ======== -->
+    <div id="page-properties" class="page">
+      <div class="page-header">
+        <div><h1>🏘 Properties</h1><p>Full portfolio across all Spyco Group entities</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('property-modal')">+ Add Property</button>
+      </div>
+      <div class="card">
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search properties…" oninput="filterTable(this,'properties-tbody')" /></div>
+        <table class="data-table">
+          <thead><tr><th>Code</th><th>Address</th><th>Entity</th><th>Status</th><th>Tenant</th><th>Weekly Rent</th><th>Lease Expiry</th><th></th></tr></thead>
+          <tbody id="properties-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Add Property Modal -->
+      <div class="modal-overlay" id="property-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">Add Property</div>
+            <button class="modal-close" onclick="closeModal('property-modal')">✕</button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group"><label>Site Code</label><input type="text" id="p-code" placeholder="e.g. 12-LLO" /></div>
+            <div class="field-group"><label>Address</label><input type="text" id="p-address" placeholder="e.g. 12 Lloyd Road, Lambton" /></div>
+            <div class="field-group"><label>Entity</label>
+              <select id="p-entity">
+                <option value="SPY">SPY — Spyco Pty Ltd</option>
+                <option value="KAL">KAL — Kalazo Pty Ltd</option>
+                <option value="REV">REV — Revma Pty Ltd</option>
+                <option value="VS">VS — Vicki Spyropoulos</option>
+                <option value="JS">JS — Jimmy Spyropoulos</option>
+                <option value="PS">PS — Peter Spyropoulos</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Status</label>
+              <select id="p-status">
+                <option value="Tenanted">Tenanted</option>
+                <option value="Vacant">Vacant</option>
+                <option value="Development">Development</option>
+                <option value="For Sale">For Sale</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Tenant Name</label><input type="text" id="p-tenant" placeholder="Tenant name" /></div>
+            <div class="field-group"><label>Weekly Rent ($)</label><input type="number" id="p-rent" placeholder="0.00" /></div>
+            <div class="field-group"><label>Lease Start</label><input type="date" id="p-lease-start" /></div>
+            <div class="field-group"><label>Lease Expiry</label><input type="date" id="p-lease-end" /></div>
+            <div class="field-group form-full"><label>Notes</label><textarea id="p-notes" placeholder="Any notes about this property…"></textarea></div>
+          </div>
+          <div class="flex gap-8 mt-16">
+            <button class="btn btn-primary" onclick="saveProperty()">💾 Save Property</button>
+            <button class="btn btn-ghost" onclick="closeModal('property-modal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== SUPPLIERS ======== -->
+    <div id="page-contacts" class="page">
+      <div class="page-header">
+        <div><h1>👥 Suppliers</h1><p>Suppliers, tenants, agents, lawyers and trades</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('contact-modal')">+ Add Supplier</button>
+      </div>
+      <div class="card">
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search suppliers…" oninput="filterTable(this,'contacts-tbody')" /></div>
+        <table class="data-table">
+          <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Contact</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="contacts-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Add Supplier Modal -->
+      <div class="modal-overlay" id="contact-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">Add Supplier</div>
+            <button class="modal-close" onclick="closeModal('contact-modal')">✕</button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group"><label>Code</label><input type="text" id="c-code" placeholder="e.g. BPP" oninput="this.value=this.value.toUpperCase()" /></div>
+            <div class="field-group"><label>Name</label><input type="text" id="c-name" placeholder="e.g. Bay Pumps & Plumbing" /></div>
+            <div class="field-group"><label>Category</label>
+              <select id="c-category">
+                <option>Trade</option><option>Legal</option><option>Accounting</option>
+                <option>Agent</option><option>Architect</option><option>Builder</option>
+                <option>Certifier</option><option>Planning</option><option>Survey</option>
+                <option>Banking</option><option>Utility</option><option>Insurance</option>
+                <option>Government</option><option>Tenant</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Phone</label><input type="tel" id="c-phone" placeholder="04xx xxx xxx" /></div>
+            <div class="field-group"><label>Email</label><input type="email" id="c-email" placeholder="email@example.com" /></div>
+            <div class="field-group"><label>Contact Person</label><input type="text" id="c-person" placeholder="e.g. John Smith" /></div>
+            <div class="field-group form-full"><label>Notes</label><textarea id="c-notes" placeholder="Any notes about this contact…"></textarea></div>
+          </div>
+          <div class="flex gap-8 mt-16">
+            <button class="btn btn-primary" onclick="saveContact()">💾 Save Supplier</button>
+            <button class="btn btn-ghost" onclick="closeModal('contact-modal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PROJECTS ======== -->
+    <div id="page-projects" class="page">
+      <div class="page-header">
+        <div><h1>📋 Projects</h1><p>DA tracking, site works and development progress</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('project-modal')">+ Add Project</button>
+      </div>
+      <div class="card">
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search projects…" oninput="filterTable(this,'projects-tbody')" /></div>
+        <table class="data-table">
+          <thead><tr><th>Project</th><th>Site</th><th>Entity</th><th>Status</th><th>Start</th><th>Due</th><th></th></tr></thead>
+          <tbody id="projects-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-overlay" id="project-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">Add Project</div>
+            <button class="modal-close" onclick="closeModal('project-modal')">✕</button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group form-full"><label>Project Name</label><input type="text" id="pr-name" placeholder="e.g. DA Submission — 49 Morpeth Rd" /></div>
+            <div class="field-group"><label>Site</label>
+              <select id="pr-site">
+                <option value="12-LLO">12 Lloyd Road, Lambton</option>
+                <option value="66-CHA">66 Charlton Street, Lambton</option>
+                <option value="49-MOR">49 Morpeth Road, Waratah West</option>
+                <option value="33-CUR">33 Curry Street, Wallsend</option>
+                <option value="35-CUR">35 Curry Street, Wallsend</option>
+                <option value="05-ARM">5 Armstrong Street, Lambton</option>
+                <option value="5A-ARM">5a Armstrong Street, Lambton</option>
+                <option value="113-DUR">113 Durham Road, Lambton</option>
+                <option value="29-DIC">29 Dickson Street, Lambton</option>
+                <option value="19-DIC">19 Dickson Street, Lambton</option>
+                <option value="9-12-CHA">9/12 Channel Road, Mayfield West</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Entity</label>
+              <select id="pr-entity">
+                <option value="SPY">SPY</option><option value="KAL">KAL</option>
+                <option value="REV">REV</option><option value="VS">VS</option>
+                <option value="JS">JS</option><option value="PS">PS</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Status</label>
+              <select id="pr-status">
+                <option>Planning</option><option>DA Submitted</option><option>DA Approved</option>
+                <option>In Progress</option><option>On Hold</option><option>Complete</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Type</label>
+              <select id="pr-type">
+                <option>Development</option><option>Renovation</option><option>Maintenance</option>
+                <option>DA Application</option><option>Subdivision</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Start Date</label><input type="date" id="pr-start" /></div>
+            <div class="field-group"><label>Due Date</label><input type="date" id="pr-due" /></div>
+            <div class="field-group"><label>Budget ($)</label><input type="number" id="pr-budget" placeholder="0.00" /></div>
+            <div class="field-group form-full"><label>Notes</label><textarea id="pr-notes" placeholder="Project notes, DA number, council contact…"></textarea></div>
+          </div>
+          <div class="flex gap-8 mt-16">
+            <button class="btn btn-primary" onclick="saveProject()">💾 Save Project</button>
+            <button class="btn btn-ghost" onclick="closeModal('project-modal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== INVOICES ======== -->
+    <div id="page-invoices" class="page">
+      <div class="page-header">
+        <div><h1>💰 Invoices</h1><p>Track all invoices, bills and progress claims</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('invoice-modal')">+ Add Invoice</button>
+      </div>
+      <div class="card">
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search invoices…" oninput="filterTable(this,'invoices-tbody')" /></div>
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Supplier</th><th>Site</th><th>Amount</th><th>Status</th><th>SPY COMMS Ref</th><th></th></tr></thead>
+          <tbody id="invoices-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-overlay" id="invoice-modal">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">Add Invoice</div>
+            <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group"><label>Date</label><input type="date" id="inv-date" /></div>
+            <div class="field-group"><label>Supplier</label><input type="text" id="inv-supplier" placeholder="e.g. Bay Pumps & Plumbing" /></div>
+            <div class="field-group"><label>Site</label>
+              <select id="inv-site">
+                <option value="12-LLO">12 Lloyd Road</option>
+                <option value="66-CHA">66 Charlton Street</option>
+                <option value="49-MOR">49 Morpeth Road</option>
+                <option value="33-CUR">33 Curry Street</option>
+                <option value="35-CUR">35 Curry Street</option>
+                <option value="05-ARM">5 Armstrong Street</option>
+                <option value="113-DUR">113 Durham Road</option>
+                <option value="29-DIC">29 Dickson Street</option>
+                <option value="9-12-CHA">9/12 Channel Road</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Entity</label>
+              <select id="inv-entity">
+                <option value="SPY">SPY</option><option value="KAL">KAL</option>
+                <option value="REV">REV</option><option value="VS">VS</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Amount ($)</label><input type="number" id="inv-amount" placeholder="0.00" step="0.01" /></div>
+            <div class="field-group"><label>Status</label>
+              <select id="inv-status">
+                <option>Unpaid</option><option>Paid</option><option>Overdue</option><option>Disputed</option>
+              </select>
+            </div>
+            <div class="field-group form-full"><label>Description</label><input type="text" id="inv-desc" placeholder="e.g. Progress claim #3 — bore pump installation" /></div>
+            <div class="field-group form-full"><label>Notes</label><textarea id="inv-notes" placeholder="Invoice number, payment details…"></textarea></div>
+          </div>
+          <div class="flex gap-8 mt-16">
+            <button class="btn btn-primary" onclick="saveInvoice()">💾 Save Invoice</button>
+            <button class="btn btn-ghost" onclick="closeModal('invoice-modal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== DOCUMENTS ======== -->
+    <div id="page-documents" class="page">
+      <div class="page-header">
+        <div><h1>📁 Documents</h1><p>Files organised with SPY COMMS naming convention</p></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Upload & Name a Document</div>
+        <p class="text-muted mb-16">Use the SPY COMMS builder below to generate the correct file name, then upload your document.</p>
+        <div class="form-grid">
+          <div class="field-group"><label>Description</label><input type="text" id="doc-desc" placeholder="e.g. Progress claim #3" oninput="buildDocName()" /></div>
+          <div class="field-group"><label>Date</label><input type="date" id="doc-date" onchange="buildDocName()" /></div>
+          <div class="field-group"><label>Subject</label>
+            <select id="doc-subject" onchange="buildDocName()">
+              <option value="">— Select —</option>
+              <option value="ACTION REQ">ACTION REQ</option><option value="ADVICE">ADVICE</option>
+              <option value="DATA">DATA</option><option value="INFO">INFO</option>
+              <option value="INVOICE">INVOICE</option><option value="LEGAL">LEGAL</option>
+              <option value="PHOTO">PHOTO</option><option value="PLAN">PLAN</option>
+              <option value="STATEMENT">STATEMENT</option>
+            </select>
+          </div>
+          <div class="field-group"><label>System</label>
+            <select id="doc-system" onchange="buildDocName()">
+              <option value="">— Select —</option>
+              <option value="[1-FIN]">[1-FIN]</option><option value="[2-PRO]">[2-PRO]</option>
+              <option value="[3-SUP]">[3-SUP]</option><option value="[4-AGR]">[4-AGR]</option>
+              <option value="[5-INT]">[5-INT]</option><option value="[6-ARC]">[6-ARC]</option>
+            </select>
+          </div>
+          <div class="field-group"><label>Entity</label>
+            <select id="doc-entity" onchange="buildDocName()">
+              <option value="">— Select —</option>
+              <option value="[SPY]">[SPY]</option><option value="[KAL]">[KAL]</option>
+              <option value="[REV]">[REV]</option><option value="[VS]">[VS]</option>
+              <option value="[JS]">[JS]</option><option value="[PS]">[PS]</option>
+            </select>
+          </div>
+          <div class="field-group"><label>Site</label>
+            <select id="doc-site" onchange="buildDocName()">
+              <option value="">— Select —</option>
+              <option value="[12-LLO]">[12-LLO]</option><option value="[66-CHA]">[66-CHA]</option>
+              <option value="[49-MOR]">[49-MOR]</option><option value="[33-CUR]">[33-CUR]</option>
+              <option value="[35-CUR]">[35-CUR]</option><option value="[05-ARM]">[05-ARM]</option>
+              <option value="[113-DUR]">[113-DUR]</option><option value="[29-DIC]">[29-DIC]</option>
+              <option value="[9-12-CHA]">[9-12-CHA]</option>
+            </select>
+          </div>
+        </div>
+        <div style="background:var(--input-bg);border:2px solid var(--accent);border-radius:var(--radius-lg);padding:16px 20px;margin:16px 0;">
+          <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Generated File Name</div>
+          <div id="doc-name-output" style="font-family:var(--mono);font-size:0.95rem;color:var(--gold);">Fill in the fields above…</div>
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary" onclick="copyDocName()">📋 Copy Name</button>
+          <span id="doc-copy-fb" style="font-size:0.82rem;color:var(--success);opacity:0;transition:opacity 0.3s;align-self:center;">✓ Copied!</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Document Log</div>
+        <div class="empty-state" id="docs-empty">
+          <div class="empty-icon">📁</div>
+          <h3>No documents logged yet</h3>
+          <p>Use the builder above to name and log your documents</p>
+        </div>
+        <table class="data-table hidden" id="docs-table">
+          <thead><tr><th>Date</th><th>File Name</th><th>Site</th><th>System</th><th></th></tr></thead>
+          <tbody id="docs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ======== SPY COMMS ======== -->
+    <div id="page-comms" class="page">
+      <div class="page-header">
+        <div><h1>⚙️ SPY COMMS</h1><p>Subject line builder, decoder and reference</p></div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchCommsTab('builder',this)">⚙ Builder</button>
+        <button class="tab-btn" onclick="switchCommsTab('decoder',this)">🔍 Decoder</button>
+        <button class="tab-btn" onclick="switchCommsTab('reference',this)">📋 Reference</button>
+        <button class="tab-btn" onclick="switchCommsTab('manage-suppliers',this)">➕ Suppliers</button>
+      </div>
+
+      <!-- BUILDER -->
+      <div id="comms-builder" class="tab-panel active">
+        <div style="background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:0.83rem;">
+          <span style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Format: </span>
+          <span style="font-family:var(--mono);color:var(--gold);">Description  —  YYMMDD  SUBJECT  [SYSTEM]  [ENTITY]  [SITE]  [SUPPLIER]</span>
+        </div>
+        <div class="card">
+          <div class="form-grid">
+            <div class="field-group"><label>📝 Description (leads subject)</label><input type="text" id="b-desc" placeholder="e.g. Progress claim #3 Bay Pumps" oninput="buildSubject()" maxlength="80" /></div>
+            <div class="field-group"><label>📅 Date</label><input type="date" id="b-date" onchange="buildSubject()" /></div>
+            <div class="field-group"><label>📌 Subject Category</label>
+              <select id="b-subject" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <option value="ACTION REQ">ACTION REQ</option><option value="ADVICE">ADVICE</option>
+                <option value="DATA">DATA</option><option value="INFO">INFO</option>
+                <option value="INVOICE">INVOICE</option><option value="LEGAL">LEGAL</option>
+                <option value="PHOTO">PHOTO</option><option value="PLAN">PLAN</option>
+                <option value="STATEMENT">STATEMENT</option>
+              </select>
+            </div>
+            <div class="field-group"><label>🗂 System</label>
+              <select id="b-system" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <option value="[1-FIN]">[1-FIN] — Finance</option>
+                <option value="[2-PRO]">[2-PRO] — Projects</option>
+                <option value="[3-SUP]">[3-SUP] — Suppliers</option>
+                <option value="[4-AGR]">[4-AGR] — Agreements</option>
+                <option value="[5-INT]">[5-INT] — Internal</option>
+                <option value="[6-ARC]">[6-ARC] — Archive</option>
+              </select>
+            </div>
+            <div class="field-group"><label>🏢 Entity</label>
+              <select id="b-structure" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <option value="[VS]">[VS] — Vicki</option>
+                <option value="[JS]">[JS] — Jimmy</option>
+                <option value="[PS]">[PS] — Peter</option>
+                <option value="[KAL]">[KAL] — Kalazo</option>
+                <option value="[REV]">[REV] — Revma</option>
+                <option value="[SPY]">[SPY] — Spyco</option>
+                <option value="[CONSULTING]">[CONSULTING]</option>
+                <option value="[GR]">[GR] — Greece</option>
+              </select>
+            </div>
+            <div class="field-group"><label>📍 Site</label>
+              <select id="b-site" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <option value="[12-LLO]">[12-LLO] — Lloyd Rd</option>
+                <option value="[66-CHA]">[66-CHA] — Charlton St</option>
+                <option value="[1-1A-DAV]">[1-1A-DAV] — Davis Ave U1</option>
+                <option value="[2-1A-DAV]">[2-1A-DAV] — Davis Ave U2</option>
+                <option value="[3-A-DAV]">[3-A-DAV] — Davis Ave U3</option>
+                <option value="[4-1A-DAV]">[4-1A-DAV] — Davis Ave U4</option>
+                <option value="[33-CUR]">[33-CUR] — Curry St 33</option>
+                <option value="[35-CUR]">[35-CUR] — Curry St 35</option>
+                <option value="[05-ARM]">[05-ARM] — Armstrong 5</option>
+                <option value="[5A-ARM]">[5A-ARM] — Armstrong 5a</option>
+                <option value="[113-DUR]">[113-DUR] — Durham Rd</option>
+                <option value="[49-MOR]">[49-MOR] — Morpeth Rd</option>
+                <option value="[29-DIC]">[29-DIC] — Dickson 29</option>
+                <option value="[19-DIC]">[19-DIC] — Dickson 19</option>
+                <option value="[9-12-CHA]">[9-12-CHA] — The Shed</option>
+              </select>
+            </div>
+            <div class="field-group"><label>🔧 Supplier</label>
+              <select id="b-supplier" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <optgroup label="Banking"><option value="[CBA]">[CBA] — CommBank</option><option value="[MAC]">[MAC] — Macquarie</option><option value="[NAB]">[NAB] — NAB</option><option value="[RED]">[RED] — RedZed</option></optgroup>
+                <optgroup label="Utilities"><option value="[AGE]">[AGE] — AGL Electricity</option><option value="[AGG]">[AGG] — AGL Gas</option><option value="[HWC]">[HWC] — Hunter Water</option><option value="[ORI]">[ORI] — Origin</option><option value="[ENE]">[ENE] — Energy Aus</option></optgroup>
+                <optgroup label="Legal"><option value="[ARG]">[ARG] — Argiris</option><option value="[GAM]">[GAM] — GAM Solicitors</option></optgroup>
+                <optgroup label="Accounting"><option value="[AMO]">[AMO] — Amodio</option><option value="[ATO]">[ATO] — Tax Office</option></optgroup>
+                <optgroup label="Agents"><option value="[4WC]">[4WC] — Four Walls</option><option value="[GSR]">[GSR] — Green St</option><option value="[LOV]">[LOV] — LOVE Realty</option></optgroup>
+                <optgroup label="Trades"><option value="[BPP]">[BPP] — Bay Pumps</option><option value="[COL]">[COL] — Colorado</option><option value="[OCP]">[OCP] — O'Connell</option><option value="[NDM]">[NDM] — Newcastle Demo</option><option value="[REV]">[REV] — Revma</option></optgroup>
+                <optgroup label="Planning/Survey"><option value="[BJS]">[BJS] — BJS Planning</option><option value="[BAC]">[BAC] — Bacon Survey</option><option value="[THI]">[THI] — Thiaki Survey</option></optgroup>
+                <optgroup label="Architects"><option value="[ELK]">[ELK] — ELK Arch</option><option value="[MUL]">[MUL] — Multi Point</option><option value="[YHD]">[YHD] — Your Home Design</option></optgroup>
+                <optgroup label="Certifiers"><option value="[CRI]">[CRI] — Certify Right</option><option value="[NCC]">[NCC] — Newcastle Council</option></optgroup>
+                <optgroup label="Custom Suppliers" id="custom-supplier-group"></optgroup>
+              </select>
+            </div>
+            <div class="field-group"><label>📆 Financial Year</label>
+              <select id="b-fy" onchange="buildSubject()">
+                <option value="">— Select —</option>
+                <option value="[FY24]">[FY24]</option><option value="[FY25]">[FY25]</option>
+                <option value="[FY26]">[FY26]</option><option value="[FY27]">[FY27]</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:var(--input-bg);border:2px solid var(--accent);border-radius:var(--radius-lg);padding:18px 22px;margin-top:8px;">
+            <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Generated Subject Line</div>
+            <div id="output-subject" style="font-family:var(--mono);font-size:1rem;color:var(--gold);min-height:28px;word-break:break-all;"></div>
+            <div class="flex gap-8 mt-16">
+              <button class="btn btn-primary btn-sm" onclick="copySubject()">📋 Copy Subject</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetBuilder()">↺ Reset</button>
+              <span id="copy-fb" style="font-size:0.8rem;color:var(--success);opacity:0;transition:opacity 0.3s;align-self:center;">✓ Copied!</span>
+            </div>
+          </div>
+          <div style="background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:14px 18px;margin-top:12px;" id="filename-box">
+            <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">File Name</div>
+            <div id="output-filename" style="font-family:var(--mono);font-size:0.88rem;color:var(--text-muted);"></div>
+            <button class="btn btn-ghost btn-sm mt-8" onclick="copyFilename()">📋 Copy File Name</button>
+            <span id="copy-fn-fb" style="font-size:0.8rem;color:var(--success);opacity:0;transition:opacity 0.3s;margin-left:8px;">✓ Copied!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DECODER -->
+      <div id="comms-decoder" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Decode a Subject Line</div>
+          <div class="flex gap-8 mb-16">
+            <input type="text" id="decode-input" placeholder="Paste subject line here…" oninput="decodeSubject()" style="flex:1;background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);color:var(--text);font-family:var(--mono);font-size:0.9rem;padding:10px 14px;" />
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('decode-input').value='';document.getElementById('decode-results').innerHTML=''">✕ Clear</button>
+          </div>
+          <div id="decode-results"></div>
+        </div>
+      </div>
+
+      <!-- REFERENCE -->
+      <div id="comms-reference" class="tab-panel">
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search all codes…" oninput="filterReference(this.value)" /></div>
+        <div id="ref-content"></div>
+      </div>
+
+      <!-- MANAGE SUPPLIERS -->
+      <div id="comms-manage-suppliers" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Add New Supplier</div>
+          <div class="form-grid">
+            <div class="field-group"><label>Name *</label><input type="text" id="ns-name" placeholder="e.g. Smith Electrical" /></div>
+            <div class="field-group"><label>Code *</label><input type="text" id="ns-code" placeholder="e.g. SME" maxlength="10" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9\-]/g,'')" /></div>
+            <div class="field-group"><label>Category</label>
+              <select id="ns-category">
+                <option>Trade</option><option>Utility</option><option>Banking</option><option>Legal</option>
+                <option>Accounting</option><option>Agent</option><option>Architect</option><option>Builder</option>
+                <option>Certifier</option><option>Planning</option><option>Survey</option><option>Insurance</option>
+                <option>Government</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Description</label><input type="text" id="ns-desc" placeholder="e.g. John Smith — Residential electrical" /></div>
+          </div>
+          <div class="flex gap-8 mt-8">
+            <button class="btn btn-primary btn-sm" onclick="addCustomSupplier()">➕ Add Supplier</button>
+            <button class="btn btn-secondary btn-sm" id="export-sup-btn" onclick="exportSuppliers()">💾 Export</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0;">📂 Import<input type="file" accept=".json" onchange="importSuppliers(event)" style="display:none;" /></label>
+            <span id="sup-fb" style="font-size:0.8rem;color:var(--success);opacity:0;transition:opacity 0.3s;align-self:center;"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Custom Suppliers</div>
+          <div class="empty-state" id="no-custom-msg"><div class="empty-icon">🔧</div><h3>No custom suppliers yet</h3><p>Add your first one above</p></div>
+          <table class="data-table hidden" id="custom-sup-table">
+            <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Description</th><th></th></tr></thead>
+            <tbody id="custom-sup-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== EMAIL ======== -->
+    <div id="page-email" class="page">
+      <div class="page-header">
+        <div><h1>✉️ Email</h1><p>Compose and send emails with SPY COMMS subject lines</p></div>
+        <button class="btn btn-primary btn-sm" onclick="newEmail()">✉️ New Email</button>
+      </div>
+
+      <!-- Email Settings Card -->
+      <div class="card" id="email-settings-card">
+        <div class="card-title">📧 Email Account</div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:12px 18px;flex:1;min-width:200px;">
+            <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Sending As</div>
+            <div style="font-size:0.95rem;color:var(--gold);font-weight:700;">jimmy@spyco.com.au</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">via mail.spyco.com.au</div>
+          </div>
+          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius);padding:12px 18px;">
+            <div style="font-size:0.75rem;color:#86efac;font-weight:700;">✓ IMAP/SMTP Ready</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Port 465 — SSL</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compose Card -->
+      <div class="card" id="compose-card">
+        <div class="card-title">✉️ Compose Email</div>
+
+        <!-- SPY COMMS subject builder inline -->
+        <div style="background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">⚙️ SPY COMMS Subject Builder</div>
+          <div class="form-grid">
+            <div class="field-group"><label>Description</label><input type="text" id="em-desc" placeholder="e.g. Progress claim #3" oninput="buildEmailSubject()" /></div>
+            <div class="field-group"><label>Date</label><input type="date" id="em-date" onchange="buildEmailSubject()" /></div>
+            <div class="field-group"><label>Subject Category</label>
+              <select id="em-subject" onchange="buildEmailSubject()">
+                <option value="">— Select —</option>
+                <option>ACTION REQ</option><option>ADVICE</option><option>DATA</option>
+                <option>INFO</option><option>INVOICE</option><option>LEGAL</option>
+                <option>PHOTO</option><option>PLAN</option><option>STATEMENT</option>
+              </select>
+            </div>
+            <div class="field-group"><label>System</label>
+              <select id="em-system" onchange="buildEmailSubject()">
+                <option value="">— Select —</option>
+                <option value="[1-FIN]">[1-FIN]</option><option value="[2-PRO]">[2-PRO]</option>
+                <option value="[3-SUP]">[3-SUP]</option><option value="[4-AGR]">[4-AGR]</option>
+                <option value="[5-INT]">[5-INT]</option><option value="[6-ARC]">[6-ARC]</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Entity</label>
+              <select id="em-entity" onchange="buildEmailSubject()">
+                <option value="">— Select —</option>
+                <option value="[VS]">[VS]</option><option value="[JS]">[JS]</option>
+                <option value="[PS]">[PS]</option><option value="[KAL]">[KAL]</option>
+                <option value="[REV]">[REV]</option><option value="[SPY]">[SPY]</option>
+              </select>
+            </div>
+            <div class="field-group"><label>Site</label>
+              <select id="em-site" onchange="buildEmailSubject()">
+                <option value="">— Select —</option>
+                <option value="[12-LLO]">[12-LLO]</option><option value="[66-CHA]">[66-CHA]</option>
+                <option value="[49-MOR]">[49-MOR]</option><option value="[33-CUR]">[33-CUR]</option>
+                <option value="[35-CUR]">[35-CUR]</option><option value="[05-ARM]">[05-ARM]</option>
+                <option value="[113-DUR]">[113-DUR]</option><option value="[49-MOR]">[49-MOR]</option>
+                <option value="[29-DIC]">[29-DIC]</option><option value="[9-12-CHA]">[9-12-CHA]</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;margin-top:4px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1;">
+              <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Generated Subject</div>
+              <div id="em-subject-preview" style="font-family:var(--mono);font-size:0.88rem;color:var(--gold);">Fill in fields above…</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="useEmailSubject()">Use →</button>
+          </div>
+        </div>
+
+        <!-- Email form -->
+        <div class="form-grid">
+          <div class="field-group form-full"><label>To *</label>
+            <input type="email" id="em-to" placeholder="recipient@example.com" />
+          </div>
+          <div class="field-group"><label>CC</label>
+            <input type="email" id="em-cc" placeholder="cc@example.com" />
+          </div>
+          <div class="field-group"><label>BCC</label>
+            <input type="email" id="em-bcc" placeholder="bcc@example.com" />
+          </div>
+          <div class="field-group form-full"><label>Subject *</label>
+            <input type="text" id="em-subject-line" placeholder="Email subject line" />
+          </div>
+          <div class="field-group form-full"><label>Message *</label>
+            <textarea id="em-body" placeholder="Type your message here…" style="min-height:180px;"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn btn-primary" id="send-btn" onclick="sendEmail()">📤 Send Email</button>
+          <button class="btn btn-ghost" onclick="resetEmailForm()">↺ Clear</button>
+          <button class="btn btn-secondary btn-sm" onclick="openGmailCompose()">🔗 Open in Gmail</button>
+          <span id="send-fb" style="font-size:0.82rem;opacity:0;transition:opacity 0.3s;"></span>
+        </div>
+
+        <div id="send-status" style="display:none;margin-top:16px;padding:14px 18px;border-radius:var(--radius);font-size:0.85rem;"></div>
+      </div>
+
+      <!-- Sent Log -->
+      <div class="card">
+        <div class="card-title">📬 Sent Email Log</div>
+        <div class="empty-state" id="email-log-empty">
+          <div class="empty-icon">📭</div>
+          <h3>No emails sent yet</h3>
+          <p>Compose and send your first email above</p>
+        </div>
+        <table class="data-table hidden" id="email-log-table">
+          <thead><tr><th>Date</th><th>To</th><th>Subject</th><th>Status</th></tr></thead>
+          <tbody id="email-log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ======== GOOGLE DRIVE ======== -->
+    <div id="page-drive" class="page">
+      <div class="page-header">
+        <div><h1>☁️ Google Drive</h1><p>Manage your Drive files directly from the portal</p></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Connect Google Drive</div>
+        <p class="text-muted" style="margin-bottom:20px;">Connect your Google Drive account to browse, upload and organise files with SPY COMMS naming — all from within the portal.</p>
+        <div style="background:var(--input-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">To connect Google Drive you need a free API key.</div>
+          <p class="text-muted" style="margin-bottom:12px;">It takes about 5 minutes. Here's how:</p>
+          <ol style="color:var(--text-muted);font-size:0.85rem;padding-left:20px;line-height:2;">
+            <li>Go to <strong style="color:var(--info);">console.cloud.google.com</strong></li>
+            <li>Create a new project called <strong>Spyco Portal</strong></li>
+            <li>Enable the <strong>Google Drive API</strong></li>
+            <li>Create an <strong>OAuth 2.0 Client ID</strong> (Web Application)</li>
+            <li>Add <strong>portal.spyco.com.au</strong> as an authorised origin</li>
+            <li>Copy your <strong>Client ID</strong> and paste it below</li>
+          </ol>
+        </div>
+        <div class="field-group" style="max-width:500px;">
+          <label>Google Client ID</label>
+          <input type="text" id="google-client-id" placeholder="Paste your Google Client ID here…" />
+        </div>
+        <button class="btn btn-primary" onclick="connectGoogleDrive()">☁️ Connect Google Drive</button>
+      </div>
+      <div class="card hidden" id="drive-browser">
+        <div class="card-title">My Drive</div>
+        <div id="drive-files"></div>
+      </div>
+    </div>
+
+    <!-- ======== ADMIN ======== -->
+    <div id="page-admin" class="page">
+      <div class="page-header">
+        <div><h1>🛡 Admin</h1><p>User management and system settings</p></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Add New User</div>
+        <div class="form-grid">
+          <div class="field-group"><label>Username *</label><input type="text" id="au-username" placeholder="e.g. vicki" autocomplete="off" /></div>
+          <div class="field-group"><label>Password *</label><input type="password" id="au-password" placeholder="Set a password" autocomplete="new-password" /></div>
+          <div class="field-group"><label>Display Name</label><input type="text" id="au-display" placeholder="e.g. Vicki Spyropoulos" /></div>
+          <div class="field-group"><label>Role</label>
+            <select id="au-role">
+              <option value="user">User — Standard access</option>
+              <option value="admin">Admin — Full access</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-8 mt-8">
+          <button class="btn btn-primary btn-sm" onclick="addUser()">➕ Add User</button>
+          <span id="au-fb" style="font-size:0.82rem;opacity:0;transition:opacity 0.3s;align-self:center;"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Current Users</div>
+        <table class="data-table" id="users-table">
+          <thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th></th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Change Password</div>
+      <button class="modal-close" onclick="closeModal('pw-modal')">✕</button>
+    </div>
+    <div class="field-group"><label>Current Password</label><input type="password" id="cp-current" /></div>
+    <div class="field-group"><label>New Password</label><input type="password" id="cp-new" /></div>
+    <div class="field-group"><label>Confirm New Password</label><input type="password" id="cp-confirm" /></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+      <button class="btn btn-ghost" onclick="closeModal('pw-modal')">Cancel</button>
+    </div>
+    <div id="cp-fb" style="font-size:0.82rem;margin-top:10px;opacity:0;transition:opacity 0.3s;"></div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+// Initialize app with API auth check
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const auth = await API.checkAuth();
+    if (auth.authenticated) {
+      // User is logged in via Google
+      showAppWithUser(auth.user);
+    } else {
+      showLogin();
+    }
+  } catch (e) {
+    // API not available, fall back to localStorage mode
+    console.log('API not available, using localStorage mode');
+  }
+});
+
+// Google login redirect
+function doGoogleLogin() {
+  window.location.href = '/api/auth/login';
+}
+
+// Show app with Google user
+function showAppWithUser(user) {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+
+  // Set user info
+  document.getElementById('user-display').textContent = user.name || user.email;
+  document.getElementById('user-role-label').textContent = user.role === 'admin' ? '⭐ Admin' : '👤 User';
+  document.getElementById('user-avatar').textContent = (user.name || user.email).charAt(0).toUpperCase();
+  document.getElementById('header-user').textContent = user.name || user.email;
+
+  // Show/hide admin nav
+  const adminNav = document.getElementById('admin-nav');
+  if (adminNav) adminNav.style.display = user.role === 'admin' ? 'flex' : 'none';
+
+  // Set greeting
+  const hour = new Date().getHours();
+  const greetEl = document.getElementById('greeting-time');
+  if (greetEl) {
+    greetEl.textContent = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  }
+  const nameEl = document.getElementById('greeting-name');
+  if (nameEl) nameEl.textContent = (user.name || user.email).split(' ')[0];
+
+  // Load data from API
+  loadDataFromAPI();
+
+  updateHeaderDate();
+  showPage('dashboard', document.querySelector('.nav-item.active') || document.querySelector('.nav-item'));
+}
+
+// Load data from API
+async function loadDataFromAPI() {
+  try {
+    // Load all data in parallel
+    const [propsRes, contactsRes, projectsRes, invoicesRes, activityRes] = await Promise.all([
+      API.getProperties(),
+      API.getContacts(),
+      API.getProjects(),
+      API.getInvoices(),
+      API.getActivity()
+    ]);
+
+    // Store in local cache for rendering
+    window.apiData = {
+      properties: propsRes.data || [],
+      contacts: contactsRes.data || [],
+      projects: projectsRes.data || [],
+      invoices: invoicesRes.data || [],
+      activity: activityRes.data || []
+    };
+
+    // Render all views
+    renderPropertiesFromAPI();
+    renderContactsFromAPI();
+    renderProjectsFromAPI();
+    renderInvoicesFromAPI();
+    loadDashboardStatsFromAPI();
+    renderActivityFeedFromAPI();
+  } catch (e) {
+    console.error('Failed to load data from API:', e);
+  }
+}
+
+// Render functions for API data
+function renderPropertiesFromAPI() {
+  const tbody = document.getElementById('properties-tbody');
+  if (!tbody || !window.apiData) return;
+  const props = window.apiData.properties;
+  if (!props.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No properties yet. Click + Add Property to get started.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = props.map(p => `
+    <tr>
+      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(p.code)}</span></td>
+      <td>${esc(p.address)}</td>
+      <td><span class="badge badge-grey">${esc(p.entity)}</span></td>
+      <td>${statusBadge(p.status)}</td>
+      <td>${esc(p.tenant) || '<span style="color:var(--text-muted);">—</span>'}</td>
+      <td>${p.rent ? '$' + Number(p.rent).toLocaleString() + '/wk' : '<span style="color:var(--text-muted);">—</span>'}</td>
+      <td>${p.leaseEnd ? formatDate(p.leaseEnd) : '<span style="color:var(--text-muted);">—</span>'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editPropertyAPI('${p.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deletePropertyAPI('${p.id}')" style="color:var(--danger);">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderContactsFromAPI() {
+  const tbody = document.getElementById('contacts-tbody');
+  if (!tbody || !window.apiData) return;
+  const contacts = window.apiData.contacts;
+  if (!contacts.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">No contacts yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = contacts.map(c => `
+    <tr>
+      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">[${esc(c.code)}]</span></td>
+      <td><strong>${esc(c.name)}</strong>${c.person ? '<br><span style="font-size:0.78rem;color:var(--text-muted);">' + esc(c.person) + '</span>' : ''}</td>
+      <td><span class="badge badge-grey">${esc(c.category)}</span></td>
+      <td>${c.phone ? '<a href="tel:' + esc(c.phone) + '" style="color:var(--info);">' + esc(c.phone) + '</a>' : ''}${c.email ? '<br><a href="mailto:' + esc(c.email) + '" style="color:var(--info);font-size:0.8rem;">' + esc(c.email) + '</a>' : ''}</td>
+      <td style="font-size:0.82rem;color:var(--text-muted);">${esc(c.notes) || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editContactAPI('${c.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteContactAPI('${c.id}')" style="color:var(--danger);">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderProjectsFromAPI() {
+  const tbody = document.getElementById('projects-tbody');
+  if (!tbody || !window.apiData) return;
+  const projects = window.apiData.projects;
+  if (!projects.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No projects yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = projects.map(p => `
+    <tr>
+      <td><strong>${esc(p.name)}</strong></td>
+      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(p.site)}</span></td>
+      <td><span class="badge badge-grey">${esc(p.entity)}</span></td>
+      <td>${projectStatusBadge(p.status)}</td>
+      <td>${p.start ? formatDate(p.start) : '—'}</td>
+      <td>${p.due ? formatDate(p.due) : '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editProjectAPI('${p.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteProjectAPI('${p.id}')" style="color:var(--danger);">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderInvoicesFromAPI() {
+  const tbody = document.getElementById('invoices-tbody');
+  if (!tbody || !window.apiData) return;
+  const invoices = window.apiData.invoices;
+  if (!invoices.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No invoices yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = invoices.map(inv => `
+    <tr>
+      <td>${inv.date ? formatDate(inv.date) : '—'}</td>
+      <td><strong>${esc(inv.supplier)}</strong></td>
+      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(inv.site)}</span></td>
+      <td><strong style="color:var(--success);">$${Number(inv.amount || 0).toLocaleString()}</strong></td>
+      <td>${invoiceStatusBadge(inv.status)}</td>
+      <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);">${inv.commsRef || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editInvoiceAPI('${inv.id}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteInvoiceAPI('${inv.id}')" style="color:var(--danger);">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function loadDashboardStatsFromAPI() {
+  if (!window.apiData) return;
+  const props = window.apiData.properties;
+  const tenanted = props.filter(p => p.status === 'Tenanted').length;
+  const projects = window.apiData.projects.filter(p => !['Complete'].includes(p.status)).length;
+  const invoices = window.apiData.invoices.filter(i => i.status === 'Unpaid' || i.status === 'Overdue').length;
+  const contacts = window.apiData.contacts.length;
+
+  setText('stat-tenanted', tenanted);
+  setText('stat-projects', projects);
+  setText('stat-invoices', invoices);
+  setText('stat-contacts', contacts);
+}
+
+function renderActivityFeedFromAPI() {
+  const feed = document.getElementById('activity-feed');
+  if (!feed || !window.apiData) return;
+  const activities = window.apiData.activity;
+  if (!activities.length) return;
+
+  feed.innerHTML = activities.slice(0, 8).map(a => {
+    const time = timeAgo(a.timestamp);
+    return `<div class="activity-item">
+      <div class="activity-dot" style="background:${a.color || '#e94560'};"></div>
+      <div>
+        <div class="activity-text">${esc(a.text)}</div>
+        <div class="activity-time">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// API CRUD Operations
+async function savePropertyAPI() {
+  const code = val('p-code');
+  const address = val('p-address');
+  if (!code || !address) { alert('Site Code and Address are required.'); return; }
+
+  const prop = {
+    code, address,
+    entity: val('p-entity'),
+    status: val('p-status'),
+    tenant: val('p-tenant'),
+    rent: val('p-rent'),
+    leaseStart: val('p-lease-start'),
+    leaseEnd: val('p-lease-end'),
+    notes: val('p-notes'),
+  };
+
+  try {
+    const editId = document.getElementById('property-modal').dataset.editId;
+    if (editId) {
+      await API.updateProperty(editId, prop);
+    } else {
+      await API.addProperty(prop);
+    }
+    closeModal('property-modal');
+    clearForm(['p-code','p-address','p-tenant','p-rent','p-lease-start','p-lease-end','p-notes']);
+    delete document.getElementById('property-modal').dataset.editId;
+    loadDataFromAPI();
+  } catch (e) {
+    alert('Error saving property: ' + e.message);
+  }
+}
+
+async function deletePropertyAPI(id) {
+  if (!confirm('Delete this property?')) return;
+  try {
+    await API.deleteProperty(id);
+    loadDataFromAPI();
+  } catch (e) {
+    alert('Error deleting property: ' + e.message);
+  }
+}
+
+// Logout with API
+async function doLogoutAPI() {
+  try {
+    await API.logout();
+  } catch (e) {}
+  window.location.reload();
+}
+
+// Export Data
+function exportData(type) {
+  const url = `/api/export/${type}`;
+  
+  // Show loading state
+  const btn = event.target;
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Exporting...';
+  btn.disabled = true;
+
+  // Trigger download
+  fetch(url, { credentials: 'include' })
+    .then(response => {
+      if (!response.ok) throw new Error('Export failed');
+      
+      // Get filename from header or generate default
+      const disposition = response.headers.get('Content-Disposition');
+      let filename = `spyco-${type}-export.csv`;
+      if (disposition && disposition.includes('filename=')) {
+        filename = disposition.split('filename=')[1].replace(/"/g, '');
+      }
+      
+      return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+
+      // Show success
+      btn.textContent = '✅ Done!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 2000);
+    })
+    .catch(err => {
+      console.error('Export error:', err);
+      btn.textContent = '❌ Error';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 2000);
+      alert('Export failed. Make sure you are logged in.');
+    });
+}
+</script>
+</body>
+</html>
