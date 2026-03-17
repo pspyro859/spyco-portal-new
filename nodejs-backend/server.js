@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
 const emailRoutes = require('./routes/email');
 const driveRoutes = require('./routes/drive');
+const exportRoutes = require('./routes/export');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/drive', driveRoutes);
+app.use('/api/export', exportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -57,7 +57,7 @@
       </div>
       <div class="login-brand-feature">
         <div class="login-brand-feature-icon">☁️</div>
-        <span>Google Drive as your database</span>
+        <span>Google Drive integration</span>
       </div>
     </div>
   </div>
@@ -76,22 +76,54 @@
       <!-- ── SIGN IN PANEL ── -->
       <div id="signin-panel">
         <h2 class="login-title">Welcome back</h2>
-        <p class="login-subtitle">Sign in with your Google account to access the portal</p>
+        <p class="login-subtitle">Sign in to your Spyco Portal account</p>
 
         <div class="login-error" id="login-error"></div>
 
-        <!-- Google Sign-In Button -->
-        <button class="login-btn google-btn" id="google-login-btn" onclick="doGoogleLogin()" style="display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#333;border:1px solid #ddd;">
-          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Sign in with Google
-        </button>
+        <div class="field-group">
+          <label>Username</label>
+          <input type="text" id="login-user" placeholder="Enter your username"
+            onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"
+            autocomplete="username" />
+        </div>
 
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
-          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;line-height:1.6;">
-            <strong style="color:var(--gold);">✨ Secure & Simple</strong><br>
-            Your data is stored in your own Google Drive.<br>
-            No passwords to remember — just use your Google account.
-          </p>
+        <div class="field-group">
+          <label>Password</label>
+          <input type="password" id="login-pass" placeholder="Enter your password"
+            onkeydown="if(event.key==='Enter')doLogin()"
+            autocomplete="current-password" />
+        </div>
+
+        <div class="login-forgot">
+          <a onclick="showForgotPanel()">Forgot your password?</a>
+        </div>
+
+        <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+
+        <p class="login-footer">Spyco Group &mdash; Internal Use Only</p>
+      </div>
+
+      <!-- ── FORGOT PASSWORD PANEL ── -->
+      <div id="forgot-panel">
+        <a class="login-back" onclick="showSignInPanel()">← Back to Sign In</a>
+        <h2 class="login-title">Reset Password</h2>
+        <p class="login-subtitle">Enter your username and we'll show you your reset options</p>
+
+        <div class="login-error" id="forgot-error"></div>
+        <div class="login-success" id="forgot-success"></div>
+
+        <div class="field-group">
+          <label>Username</label>
+          <input type="text" id="forgot-user" placeholder="Enter your username"
+            onkeydown="if(event.key==='Enter')doForgotPassword()" autocomplete="username" />
+        </div>
+
+        <button class="login-btn" onclick="doForgotPassword()">Send Reset Instructions →</button>
+
+        <!-- Reset result box (shown after lookup) -->
+        <div id="forgot-result" style="display:none;margin-top:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;text-align:left;">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Reset Options</div>
+          <div id="forgot-result-content"></div>
         </div>
 
         <p class="login-footer" style="margin-top:20px;">Spyco Group &mdash; Internal Use Only</p>
@@ -232,20 +264,6 @@
           <button class="btn btn-secondary" onclick="showPage('invoices',document.querySelector('[onclick*=invoices]'))">💰 Log Invoice</button>
           <button class="btn btn-secondary" onclick="showPage('projects',document.querySelector('[onclick*=projects]'))">📋 View Projects</button>
           <button class="btn btn-secondary" onclick="showPage('documents',document.querySelector('[onclick*=documents]'))">📁 Documents</button>
-        </div>
-      </div>
-
-      <!-- DATA EXPORT -->
-      <div class="card">
-        <div class="card-title">📤 Export Data</div>
-        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Download your data as CSV files or create a full backup.</p>
-        <div class="quick-actions">
-          <button class="btn btn-ghost" onclick="exportData('properties')">📊 Properties CSV</button>
-          <button class="btn btn-ghost" onclick="exportData('contacts')">👥 Contacts CSV</button>
-          <button class="btn btn-ghost" onclick="exportData('projects')">📋 Projects CSV</button>
-          <button class="btn btn-ghost" onclick="exportData('invoices')">💰 Invoices CSV</button>
-          <button class="btn btn-secondary" onclick="exportData('report')">📑 Summary Report</button>
-          <button class="btn btn-primary" onclick="exportData('all')">💾 Full Backup (JSON)</button>
         </div>
       </div>
 
@@ -950,326 +968,6 @@
 </div>
 
 <script src="js/data.js"></script>
-<script src="js/api.js"></script>
 <script src="js/app.js"></script>
-<script>
-// Initialize app with API auth check
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const auth = await API.checkAuth();
-    if (auth.authenticated) {
-      // User is logged in via Google
-      showAppWithUser(auth.user);
-    } else {
-      showLogin();
-    }
-  } catch (e) {
-    // API not available, fall back to localStorage mode
-    console.log('API not available, using localStorage mode');
-  }
-});
-
-// Google login redirect
-function doGoogleLogin() {
-  window.location.href = '/api/auth/login';
-}
-
-// Show app with Google user
-function showAppWithUser(user) {
-  document.getElementById('login-page').style.display = 'none';
-  document.getElementById('app').style.display = 'grid';
-
-  // Set user info
-  document.getElementById('user-display').textContent = user.name || user.email;
-  document.getElementById('user-role-label').textContent = user.role === 'admin' ? '⭐ Admin' : '👤 User';
-  document.getElementById('user-avatar').textContent = (user.name || user.email).charAt(0).toUpperCase();
-  document.getElementById('header-user').textContent = user.name || user.email;
-
-  // Show/hide admin nav
-  const adminNav = document.getElementById('admin-nav');
-  if (adminNav) adminNav.style.display = user.role === 'admin' ? 'flex' : 'none';
-
-  // Set greeting
-  const hour = new Date().getHours();
-  const greetEl = document.getElementById('greeting-time');
-  if (greetEl) {
-    greetEl.textContent = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  }
-  const nameEl = document.getElementById('greeting-name');
-  if (nameEl) nameEl.textContent = (user.name || user.email).split(' ')[0];
-
-  // Load data from API
-  loadDataFromAPI();
-
-  updateHeaderDate();
-  showPage('dashboard', document.querySelector('.nav-item.active') || document.querySelector('.nav-item'));
-}
-
-// Load data from API
-async function loadDataFromAPI() {
-  try {
-    // Load all data in parallel
-    const [propsRes, contactsRes, projectsRes, invoicesRes, activityRes] = await Promise.all([
-      API.getProperties(),
-      API.getContacts(),
-      API.getProjects(),
-      API.getInvoices(),
-      API.getActivity()
-    ]);
-
-    // Store in local cache for rendering
-    window.apiData = {
-      properties: propsRes.data || [],
-      contacts: contactsRes.data || [],
-      projects: projectsRes.data || [],
-      invoices: invoicesRes.data || [],
-      activity: activityRes.data || []
-    };
-
-    // Render all views
-    renderPropertiesFromAPI();
-    renderContactsFromAPI();
-    renderProjectsFromAPI();
-    renderInvoicesFromAPI();
-    loadDashboardStatsFromAPI();
-    renderActivityFeedFromAPI();
-  } catch (e) {
-    console.error('Failed to load data from API:', e);
-  }
-}
-
-// Render functions for API data
-function renderPropertiesFromAPI() {
-  const tbody = document.getElementById('properties-tbody');
-  if (!tbody || !window.apiData) return;
-  const props = window.apiData.properties;
-  if (!props.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No properties yet. Click + Add Property to get started.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = props.map(p => `
-    <tr>
-      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(p.code)}</span></td>
-      <td>${esc(p.address)}</td>
-      <td><span class="badge badge-grey">${esc(p.entity)}</span></td>
-      <td>${statusBadge(p.status)}</td>
-      <td>${esc(p.tenant) || '<span style="color:var(--text-muted);">—</span>'}</td>
-      <td>${p.rent ? '$' + Number(p.rent).toLocaleString() + '/wk' : '<span style="color:var(--text-muted);">—</span>'}</td>
-      <td>${p.leaseEnd ? formatDate(p.leaseEnd) : '<span style="color:var(--text-muted);">—</span>'}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editPropertyAPI('${p.id}')">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deletePropertyAPI('${p.id}')" style="color:var(--danger);">🗑</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderContactsFromAPI() {
-  const tbody = document.getElementById('contacts-tbody');
-  if (!tbody || !window.apiData) return;
-  const contacts = window.apiData.contacts;
-  if (!contacts.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">No contacts yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = contacts.map(c => `
-    <tr>
-      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">[${esc(c.code)}]</span></td>
-      <td><strong>${esc(c.name)}</strong>${c.person ? '<br><span style="font-size:0.78rem;color:var(--text-muted);">' + esc(c.person) + '</span>' : ''}</td>
-      <td><span class="badge badge-grey">${esc(c.category)}</span></td>
-      <td>${c.phone ? '<a href="tel:' + esc(c.phone) + '" style="color:var(--info);">' + esc(c.phone) + '</a>' : ''}${c.email ? '<br><a href="mailto:' + esc(c.email) + '" style="color:var(--info);font-size:0.8rem;">' + esc(c.email) + '</a>' : ''}</td>
-      <td style="font-size:0.82rem;color:var(--text-muted);">${esc(c.notes) || '—'}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editContactAPI('${c.id}')">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteContactAPI('${c.id}')" style="color:var(--danger);">🗑</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderProjectsFromAPI() {
-  const tbody = document.getElementById('projects-tbody');
-  if (!tbody || !window.apiData) return;
-  const projects = window.apiData.projects;
-  if (!projects.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No projects yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = projects.map(p => `
-    <tr>
-      <td><strong>${esc(p.name)}</strong></td>
-      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(p.site)}</span></td>
-      <td><span class="badge badge-grey">${esc(p.entity)}</span></td>
-      <td>${projectStatusBadge(p.status)}</td>
-      <td>${p.start ? formatDate(p.start) : '—'}</td>
-      <td>${p.due ? formatDate(p.due) : '—'}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editProjectAPI('${p.id}')">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteProjectAPI('${p.id}')" style="color:var(--danger);">🗑</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderInvoicesFromAPI() {
-  const tbody = document.getElementById('invoices-tbody');
-  if (!tbody || !window.apiData) return;
-  const invoices = window.apiData.invoices;
-  if (!invoices.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No invoices yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = invoices.map(inv => `
-    <tr>
-      <td>${inv.date ? formatDate(inv.date) : '—'}</td>
-      <td><strong>${esc(inv.supplier)}</strong></td>
-      <td><span style="font-family:var(--mono);font-size:0.82rem;color:var(--gold);">${esc(inv.site)}</span></td>
-      <td><strong style="color:var(--success);">$${Number(inv.amount || 0).toLocaleString()}</strong></td>
-      <td>${invoiceStatusBadge(inv.status)}</td>
-      <td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);">${inv.commsRef || '—'}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editInvoiceAPI('${inv.id}')">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteInvoiceAPI('${inv.id}')" style="color:var(--danger);">🗑</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function loadDashboardStatsFromAPI() {
-  if (!window.apiData) return;
-  const props = window.apiData.properties;
-  const tenanted = props.filter(p => p.status === 'Tenanted').length;
-  const projects = window.apiData.projects.filter(p => !['Complete'].includes(p.status)).length;
-  const invoices = window.apiData.invoices.filter(i => i.status === 'Unpaid' || i.status === 'Overdue').length;
-  const contacts = window.apiData.contacts.length;
-
-  setText('stat-tenanted', tenanted);
-  setText('stat-projects', projects);
-  setText('stat-invoices', invoices);
-  setText('stat-contacts', contacts);
-}
-
-function renderActivityFeedFromAPI() {
-  const feed = document.getElementById('activity-feed');
-  if (!feed || !window.apiData) return;
-  const activities = window.apiData.activity;
-  if (!activities.length) return;
-
-  feed.innerHTML = activities.slice(0, 8).map(a => {
-    const time = timeAgo(a.timestamp);
-    return `<div class="activity-item">
-      <div class="activity-dot" style="background:${a.color || '#e94560'};"></div>
-      <div>
-        <div class="activity-text">${esc(a.text)}</div>
-        <div class="activity-time">${time}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// API CRUD Operations
-async function savePropertyAPI() {
-  const code = val('p-code');
-  const address = val('p-address');
-  if (!code || !address) { alert('Site Code and Address are required.'); return; }
-
-  const prop = {
-    code, address,
-    entity: val('p-entity'),
-    status: val('p-status'),
-    tenant: val('p-tenant'),
-    rent: val('p-rent'),
-    leaseStart: val('p-lease-start'),
-    leaseEnd: val('p-lease-end'),
-    notes: val('p-notes'),
-  };
-
-  try {
-    const editId = document.getElementById('property-modal').dataset.editId;
-    if (editId) {
-      await API.updateProperty(editId, prop);
-    } else {
-      await API.addProperty(prop);
-    }
-    closeModal('property-modal');
-    clearForm(['p-code','p-address','p-tenant','p-rent','p-lease-start','p-lease-end','p-notes']);
-    delete document.getElementById('property-modal').dataset.editId;
-    loadDataFromAPI();
-  } catch (e) {
-    alert('Error saving property: ' + e.message);
-  }
-}
-
-async function deletePropertyAPI(id) {
-  if (!confirm('Delete this property?')) return;
-  try {
-    await API.deleteProperty(id);
-    loadDataFromAPI();
-  } catch (e) {
-    alert('Error deleting property: ' + e.message);
-  }
-}
-
-// Logout with API
-async function doLogoutAPI() {
-  try {
-    await API.logout();
-  } catch (e) {}
-  window.location.reload();
-}
-
-// Export Data
-function exportData(type) {
-  const url = `/api/export/${type}`;
-  
-  // Show loading state
-  const btn = event.target;
-  const originalText = btn.textContent;
-  btn.textContent = '⏳ Exporting...';
-  btn.disabled = true;
-
-  // Trigger download
-  fetch(url, { credentials: 'include' })
-    .then(response => {
-      if (!response.ok) throw new Error('Export failed');
-      
-      // Get filename from header or generate default
-      const disposition = response.headers.get('Content-Disposition');
-      let filename = `spyco-${type}-export.csv`;
-      if (disposition && disposition.includes('filename=')) {
-        filename = disposition.split('filename=')[1].replace(/"/g, '');
-      }
-      
-      return response.blob().then(blob => ({ blob, filename }));
-    })
-    .then(({ blob, filename }) => {
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-
-      // Show success
-      btn.textContent = '✅ Done!';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }, 2000);
-    })
-    .catch(err => {
-      console.error('Export error:', err);
-      btn.textContent = '❌ Error';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }, 2000);
-      alert('Export failed. Make sure you are logged in.');
-    });
-}
-</script>
 </body>
 </html>
