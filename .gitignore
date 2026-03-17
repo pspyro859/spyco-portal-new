@@ -84,4 +84,7 @@ secrets/
 
 # Local configuration files
 config/local.php
-config/production.php
+config/production.php-e 
+# Environment files
+*.env
+*.env.*
