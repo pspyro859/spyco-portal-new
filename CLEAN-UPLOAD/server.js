@@ -41,8 +41,8 @@ app.use(session({
   }
 }));
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from same directory (root)
+app.use(express.static(__dirname));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -58,7 +58,7 @@ app.get('/api/health', (req, res) => {
 
 // Serve index.html for all other routes (SPA)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Error handling middleware
@@ -68,7 +68,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Spyco Portal running on port ${PORT}`);
-  console.log(`📁 Static files served from: ${path.join(__dirname, 'public')}`);
-  console.log(`🔗 App URL: ${process.env.APP_URL || `http://localhost:${PORT}`}`);
+  console.log(`Spyco Portal running on port ${PORT}`);
 });
