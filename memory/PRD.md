@@ -25,6 +25,15 @@ Property management portal for Spyco Group with SPY COMMS file naming system, em
 8. Email sync with IMAP
 
 ## What's Been Implemented
+### March 18, 2026 (Update 3)
+- ✅ **Polished all pages:**
+  - Reference page: All 7 tabs working (Subject, Systems, Structure, Sites, Suppliers, Financial, Quarters)
+  - SPY COMMS: All dropdowns populated, copy buttons work, Drive search link added
+  - Invoices: File upload added, Mark Paid button, proper tallying
+  - Documents: SPY COMMS naming integration
+- ✅ **Fixed mobile overlay z-index** for proper menu closing
+- ✅ **Added 41 suppliers** to meet 40+ requirement
+
 ### March 18, 2026 (Update 2)
 - ✅ **Responsive Design:** Full mobile and tablet support
   - Hamburger menu for mobile navigation

@@ -99,7 +99,9 @@ const SPYCO_REFERENCE = {
     { code: 'ATO', name: 'Australian Tax Office', description: 'Government: Tax compliance and lodgements.' },
     { code: 'AUS', name: 'Aussie Buckets', description: 'Equipment hire.' },
     { code: 'ORI', name: 'Origin Energy', description: 'Utility provider.' },
-    { code: 'REE', name: 'Red Energy', description: 'Utility provider.' }
+    { code: 'REE', name: 'Red Energy', description: 'Utility provider.' },
+    { code: 'TEL', name: 'Telstra', description: 'Telecommunications provider.' },
+    { code: 'OPT', name: 'Optus', description: 'Telecommunications provider.' }
   ],
 
   // FINANCIAL YEARS (for Archive)
