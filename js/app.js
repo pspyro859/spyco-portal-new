@@ -294,30 +294,52 @@ function renderProperties() {
 
 // ── Contacts/Suppliers ────────────────────────────────────────
 function renderContacts() {
-  const data = window.appData.contacts;
-  const tbody = document.getElementById('contacts-tbody');
+  // Combine manual contacts with reference suppliers
+  const manualContacts = window.appData.contacts || [];
+  const refSuppliers = window.SPYCO_REFERENCE?.Suppliers || [];
   
-  if (!data.length) {
+  // Merge: reference suppliers as base, manual contacts can override or add
+  const allSuppliers = [...refSuppliers];
+  manualContacts.forEach(c => {
+    const existing = allSuppliers.findIndex(s => s.code === c.code);
+    if (existing >= 0) {
+      // Merge manual data with reference
+      allSuppliers[existing] = { ...allSuppliers[existing], ...c, fromRef: true };
+    } else {
+      allSuppliers.push({ ...c, fromRef: false });
+    }
+  });
+  
+  const tbody = document.getElementById('contacts-tbody');
+  const countEl = document.getElementById('supplier-count');
+  
+  // Update count
+  if (countEl) countEl.textContent = allSuppliers.length;
+  
+  if (!allSuppliers.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:32px;">No suppliers yet.</td></tr>';
     return;
   }
   
-  tbody.innerHTML = data.map(c => `
+  // Sort alphabetically by code
+  allSuppliers.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+  
+  tbody.innerHTML = allSuppliers.map(c => `
     <tr>
-      <td><span class="code">[${esc(c.code)}]</span></td>
+      <td><span class="code" style="color:var(--accent);">[${esc(c.code)}]</span></td>
       <td><strong>${esc(c.name)}</strong></td>
-      <td><span class="badge badge-${getCategoryColor(c.category)}">${esc(c.category || '-')}</span></td>
+      <td><span class="badge badge-${getCategoryColor(c.category)}">${esc(c.category || c.description?.split(':')[0] || '-')}</span></td>
       <td>${c.phone || c.email ? (c.phone || '') + (c.phone && c.email ? '<br>' : '') + (c.email || '') : '<span class="text-muted">—</span>'}</td>
-      <td class="text-muted">${esc(c.notes) || '—'}</td>
+      <td class="text-muted" style="max-width:300px;">${esc(c.notes || c.description || '') || '—'}</td>
       <td class="table-actions">
-        <button class="btn btn-icon btn-ghost" onclick="editContact('${c.id}')">✏️</button>
-        <button class="btn btn-icon btn-ghost delete" onclick="deleteContact('${c.id}')">🗑</button>
+        <button class="btn btn-icon btn-ghost" onclick="editContact('${c.id || c.code}')" title="Edit">✏️</button>
+        ${!c.fromRef && c.id ? `<button class="btn btn-icon btn-ghost delete" onclick="deleteContact('${c.id}')" title="Delete">🗑</button>` : ''}
       </td>
     </tr>
   `).join('');
   
-  // Update ref data for suppliers
-  refData.suppliers = data.map(c => ({ code: c.code, name: c.name, desc: c.category || '' }));
+  // Update ref data for suppliers dropdown
+  refData.suppliers = allSuppliers.map(c => ({ code: c.code, name: c.name, desc: c.description || c.category || '' }));
 }
 
 // ── Projects ──────────────────────────────────────────────────

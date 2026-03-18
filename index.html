@@ -283,15 +283,20 @@
         <div class="page-header">
           <div>
             <h1>👥 Suppliers</h1>
-            <p>Suppliers, tenants, agents, lawyers and trades</p>
+            <p>Trades, utilities, agents, legal and service providers (from SPY COMMS Master)</p>
           </div>
           <button class="btn btn-primary" onclick="openModal('contact-modal')">+ Add Supplier</button>
         </div>
         
         <div class="card">
-          <div class="search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Search suppliers..." oninput="filterTable(this,'contacts-tbody')" />
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+            <div class="search-wrap" style="margin-bottom:0;">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search suppliers..." oninput="filterTable(this,'contacts-tbody')" />
+            </div>
+            <div class="text-muted" style="font-size:0.85rem;">
+              <span id="supplier-count">0</span> suppliers from SPY COMMS Master
+            </div>
           </div>
           <div class="table-responsive"><table class="data-table">
             <thead>
@@ -300,7 +305,7 @@
                 <th>Name</th>
                 <th>Category</th>
                 <th>Contact</th>
-                <th>Notes</th>
+                <th>Description</th>
                 <th></th>
               </tr>
             </thead>
