@@ -1050,41 +1050,25 @@ function scanEmails() {
       folder: settings.folder || 'INBOX',
       limit: 100,
       primaryFolder: settings.primaryFolder || 'site',
-      secondaryFolder: settings.secondaryFolder || 'subject'
+      secondaryFolder: settings.secondaryFolder || 'subject',
+      fetchBody: true
     })
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
+      // Store emails globally for viewing
+      window.scannedEmails = data.emails || [];
+      
       // Update statistics
       document.getElementById('stat-scanned').textContent = data.scanned;
       document.getElementById('stat-filed').textContent = data.filed;
       document.getElementById('stat-unmatched').textContent = data.unmatched;
       
-      // Update table
-      const tbody = document.getElementById('filed-emails-tbody');
-      if (data.emails && data.emails.length > 0) {
-        tbody.innerHTML = data.emails
-          .filter(e => e.spyCommsRef)
-          .slice(0, 50)
-          .map(e => `
-            <tr>
-              <td>${e.date ? new Date(e.date).toLocaleDateString() : '—'}</td>
-              <td>${esc(e.from)}</td>
-              <td>${esc(e.subject.substring(0, 60))}${e.subject.length > 60 ? '...' : ''}</td>
-              <td><span class="code">${esc(e.spyCommsRef)}</span></td>
-              <td><span class="code">${esc(e.filedTo)}</span></td>
-            </tr>
-          `).join('');
-        
-        if (data.filed === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails with SPY COMMS references found.</td></tr>';
-        }
-      } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails found.</td></tr>';
-      }
+      // Render email list
+      renderEmailList(window.scannedEmails);
       
-      alert(`Scan complete!\n\nScanned: ${data.scanned}\nFiled: ${data.filed}\nUnmatched: ${data.unmatched}`);
+      alert(`Scan complete! Found ${data.scanned} emails.`);
     } else {
       alert('Scan failed: ' + data.message);
     }
@@ -1096,6 +1080,199 @@ function scanEmails() {
     btn.textContent = 'Scan Emails';
     btn.disabled = false;
   });
+}
+
+// Store scanned emails globally
+window.scannedEmails = [];
+window.currentEmailIndex = -1;
+
+function renderEmailList(emails, filter = 'all') {
+  const tbody = document.getElementById('emails-tbody');
+  
+  let filteredEmails = emails;
+  if (filter === 'matched') {
+    filteredEmails = emails.filter(e => e.spyCommsRef);
+  } else if (filter === 'unmatched') {
+    filteredEmails = emails.filter(e => !e.spyCommsRef);
+  }
+  
+  if (!filteredEmails.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:32px;">No emails found.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filteredEmails.map((e, idx) => `
+    <tr data-email-index="${emails.indexOf(e)}">
+      <td><input type="checkbox" class="email-checkbox" onchange="updateFileButton()" /></td>
+      <td>${e.date ? new Date(e.date).toLocaleDateString() : '—'}</td>
+      <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">${esc(e.from)}</td>
+      <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis;" title="${esc(e.subject)}">${esc(e.subject.substring(0, 50))}${e.subject.length > 50 ? '...' : ''}</td>
+      <td>${e.spyCommsRef ? '<span class="code" style="color:var(--accent);">' + esc(e.spyCommsRef) + '</span>' : '<span class="text-muted">—</span>'}</td>
+      <td>
+        <button class="btn btn-icon btn-ghost" onclick="viewEmail(${emails.indexOf(e)})" title="View Email">👁</button>
+        ${e.spyCommsRef ? '<button class="btn btn-icon btn-ghost" onclick="fileSingleEmail(' + emails.indexOf(e) + ')" title="File to Drive">📁</button>' : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterEmails() {
+  const filter = document.getElementById('email-filter').value;
+  renderEmailList(window.scannedEmails, filter);
+}
+
+function toggleAllEmails(masterCheckbox) {
+  const checkboxes = document.querySelectorAll('#emails-tbody .email-checkbox');
+  checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+  updateFileButton();
+}
+
+function updateFileButton() {
+  const checked = document.querySelectorAll('#emails-tbody .email-checkbox:checked').length;
+  const btn = document.getElementById('file-selected-btn');
+  btn.disabled = checked === 0;
+  btn.textContent = checked > 0 ? `File Selected (${checked})` : 'File Selected';
+}
+
+function viewEmail(index) {
+  const email = window.scannedEmails[index];
+  if (!email) return;
+  
+  window.currentEmailIndex = index;
+  
+  // Show preview card
+  document.getElementById('email-preview-card').style.display = 'block';
+  
+  // Fill in details
+  document.getElementById('preview-from').textContent = email.from || 'Unknown';
+  document.getElementById('preview-to').textContent = email.to || 'Unknown';
+  document.getElementById('preview-date').textContent = email.date ? new Date(email.date).toLocaleString() : '—';
+  document.getElementById('preview-subject').textContent = email.subject || 'No Subject';
+  
+  if (email.spyCommsRef) {
+    document.getElementById('preview-ref-row').style.display = 'block';
+    document.getElementById('preview-ref').textContent = email.spyCommsRef;
+    document.getElementById('file-current-btn').disabled = false;
+  } else {
+    document.getElementById('preview-ref-row').style.display = 'none';
+    document.getElementById('file-current-btn').disabled = true;
+  }
+  
+  // Show body (fetch if not loaded)
+  const bodyEl = document.getElementById('preview-body');
+  if (email.body) {
+    bodyEl.textContent = email.body;
+  } else {
+    bodyEl.innerHTML = '<span class="text-muted">Loading email body...</span>';
+    fetchEmailBody(index);
+  }
+  
+  // Scroll to preview
+  document.getElementById('email-preview-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function fetchEmailBody(index) {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  const email = window.scannedEmails[index];
+  
+  fetch('/api/email/fetch-body', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imapServer: settings.imapServer,
+      imapPort: settings.imapPort,
+      email: settings.email,
+      password: settings.password,
+      ssl: settings.ssl,
+      folder: settings.folder || 'INBOX',
+      seqno: email.seqno
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.scannedEmails[index].body = data.body;
+      window.scannedEmails[index].to = data.to;
+      if (window.currentEmailIndex === index) {
+        document.getElementById('preview-body').textContent = data.body || '(No content)';
+        document.getElementById('preview-to').textContent = data.to || 'Unknown';
+      }
+    } else {
+      document.getElementById('preview-body').textContent = 'Failed to load: ' + data.message;
+    }
+  })
+  .catch(err => {
+    document.getElementById('preview-body').textContent = 'Error: ' + err.message;
+  });
+}
+
+function closeEmailPreview() {
+  document.getElementById('email-preview-card').style.display = 'none';
+  window.currentEmailIndex = -1;
+}
+
+function fileCurrentEmail() {
+  if (window.currentEmailIndex < 0) return;
+  fileSingleEmail(window.currentEmailIndex);
+}
+
+function fileSingleEmail(index) {
+  const email = window.scannedEmails[index];
+  if (!email || !email.spyCommsRef) {
+    alert('This email has no SPY COMMS reference. Please edit the reference first.');
+    return;
+  }
+  
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  
+  alert(`Email would be filed to:\n${email.filedTo}${email.spyCommsRef}.eml\n\nNote: Full Google Drive integration coming soon!`);
+}
+
+function fileSelectedEmails() {
+  const checkboxes = document.querySelectorAll('#emails-tbody .email-checkbox:checked');
+  const indices = [];
+  
+  checkboxes.forEach(cb => {
+    const row = cb.closest('tr');
+    const index = parseInt(row.dataset.emailIndex);
+    indices.push(index);
+  });
+  
+  const emailsToFile = indices.map(i => window.scannedEmails[i]).filter(e => e && e.spyCommsRef);
+  
+  if (emailsToFile.length === 0) {
+    alert('No selected emails have SPY COMMS references.');
+    return;
+  }
+  
+  alert(`Would file ${emailsToFile.length} email(s) to Google Drive.\n\nNote: Full Google Drive integration coming soon!`);
+}
+
+function editEmailRef() {
+  if (window.currentEmailIndex < 0) return;
+  
+  const email = window.scannedEmails[window.currentEmailIndex];
+  const currentRef = email.spyCommsRef || '';
+  
+  const newRef = prompt('Enter SPY COMMS reference:\n(Format: DATE_SUBJECT_SYSTEM_STRUCTURE_SITE_SUPPLIER)\n\nExample: 20260318_INVOICE_ELEC_RESI_12-LLO_BAY', currentRef);
+  
+  if (newRef && newRef !== currentRef) {
+    window.scannedEmails[window.currentEmailIndex].spyCommsRef = newRef;
+    window.scannedEmails[window.currentEmailIndex].filedTo = '/' + newRef.split('_')[4] + '/' + newRef.split('_')[1] + '/';
+    
+    // Refresh view
+    viewEmail(window.currentEmailIndex);
+    renderEmailList(window.scannedEmails, document.getElementById('email-filter').value);
+    
+    // Update stats
+    const matched = window.scannedEmails.filter(e => e.spyCommsRef).length;
+    document.getElementById('stat-filed').textContent = matched;
+    document.getElementById('stat-unmatched').textContent = window.scannedEmails.length - matched;
+  }
+}
+
+function markAsRead() {
+  alert('Mark as read - Coming soon!');
 }
 
 // Load settings on page load

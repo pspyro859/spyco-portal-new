@@ -556,28 +556,63 @@
             <div class="card-title">Scan Statistics</div>
             <div class="stats-mini">
               <div><span id="stat-scanned">0</span> Emails Scanned</div>
-              <div><span id="stat-filed">0</span> Filed by SPY COMMS</div>
+              <div><span id="stat-filed">0</span> With SPY COMMS Ref</div>
               <div><span id="stat-unmatched">0</span> Unmatched</div>
             </div>
           </div>
         </div>
         
+        <!-- Email List -->
         <div class="card">
-          <div class="card-title">Recent Filed Emails</div>
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Scanned Emails</span>
+            <div style="display:flex; gap:8px;">
+              <select id="email-filter" onchange="filterEmails()" style="padding:6px 12px; border-radius:6px; background:var(--bg-card); border:1px solid var(--border); color:var(--text);">
+                <option value="all">All Emails</option>
+                <option value="matched">With SPY COMMS Ref</option>
+                <option value="unmatched">Without Ref</option>
+              </select>
+              <button class="btn btn-primary" onclick="fileSelectedEmails()" id="file-selected-btn" disabled>File Selected</button>
+            </div>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width:40px;"><input type="checkbox" id="select-all-emails" onchange="toggleAllEmails(this)" /></th>
                 <th>Date</th>
                 <th>From</th>
                 <th>Subject</th>
                 <th>SPY COMMS Ref</th>
-                <th>Filed To</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="filed-emails-tbody">
-              <tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails filed yet. Click "Scan Emails" to start.</td></tr>
+            <tbody id="emails-tbody">
+              <tr><td colspan="6" class="text-center text-muted" style="padding:32px;">Click "Scan Emails" to fetch your emails.</td></tr>
             </tbody>
           </table>
+        </div>
+        
+        <!-- Email Preview Panel -->
+        <div class="card" id="email-preview-card" style="display:none;">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Email Preview</span>
+            <button class="btn btn-ghost" onclick="closeEmailPreview()">✕ Close</button>
+          </div>
+          <div id="email-preview-content">
+            <div class="email-header" style="padding:16px; background:var(--bg-card); border-radius:8px; margin-bottom:16px;">
+              <div style="margin-bottom:8px;"><strong>From:</strong> <span id="preview-from"></span></div>
+              <div style="margin-bottom:8px;"><strong>To:</strong> <span id="preview-to"></span></div>
+              <div style="margin-bottom:8px;"><strong>Date:</strong> <span id="preview-date"></span></div>
+              <div style="margin-bottom:8px;"><strong>Subject:</strong> <span id="preview-subject"></span></div>
+              <div id="preview-ref-row" style="display:none;"><strong>SPY COMMS Ref:</strong> <span id="preview-ref" class="code" style="color:var(--accent);"></span></div>
+            </div>
+            <div id="preview-body" style="padding:16px; background:var(--bg); border-radius:8px; border:1px solid var(--border); min-height:200px; white-space:pre-wrap; font-family:var(--mono); font-size:0.9rem;"></div>
+            <div style="margin-top:16px; display:flex; gap:12px;">
+              <button class="btn btn-primary" onclick="fileCurrentEmail()" id="file-current-btn">File to Drive</button>
+              <button class="btn btn-secondary" onclick="editEmailRef()">Edit SPY COMMS Ref</button>
+              <button class="btn btn-ghost" onclick="markAsRead()">Mark as Read</button>
+            </div>
+          </div>
         </div>
       </div>
       

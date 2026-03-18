@@ -203,6 +203,109 @@ router.post('/scan', async (req, res) => {
 });
 
 /**
+ * POST /api/email/fetch-body
+ * Fetch full email body for a specific message
+ */
+router.post('/fetch-body', async (req, res) => {
+  const { imapServer, imapPort, email, password, ssl, folder, seqno } = req.body;
+  
+  if (!imapServer || !email || !password || !seqno) {
+    return res.status(400).json({
+      success: false,
+      message: 'IMAP credentials and message sequence number required'
+    });
+  }
+  
+  try {
+    const imap = new Imap({
+      user: email,
+      password: password,
+      host: imapServer,
+      port: parseInt(imapPort) || 993,
+      tls: ssl !== 'false',
+      tlsOptions: { rejectUnauthorized: false }
+    });
+    
+    let emailBody = '';
+    let emailTo = '';
+    
+    await new Promise((resolve, reject) => {
+      imap.once('ready', () => {
+        imap.openBox(folder || 'INBOX', true, (err, box) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          
+          const fetch = imap.seq.fetch(seqno, {
+            bodies: ['HEADER.FIELDS (TO)', 'TEXT'],
+            struct: true
+          });
+          
+          fetch.on('message', (msg) => {
+            msg.on('body', (stream, info) => {
+              let buffer = '';
+              stream.on('data', (chunk) => {
+                buffer += chunk.toString('utf8');
+              });
+              stream.once('end', () => {
+                if (info.which.includes('HEADER')) {
+                  const toMatch = buffer.match(/To: (.+)/i);
+                  emailTo = toMatch ? toMatch[1].trim() : '';
+                } else {
+                  emailBody = buffer;
+                }
+              });
+            });
+          });
+          
+          fetch.once('error', reject);
+          fetch.once('end', () => {
+            imap.end();
+            resolve();
+          });
+        });
+      });
+      
+      imap.once('error', reject);
+      imap.connect();
+    });
+    
+    // Clean up body - remove HTML tags if present, decode quoted-printable
+    let cleanBody = emailBody;
+    
+    // Simple HTML stripping
+    if (cleanBody.includes('<html') || cleanBody.includes('<HTML')) {
+      cleanBody = cleanBody.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      cleanBody = cleanBody.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+      cleanBody = cleanBody.replace(/<[^>]+>/g, ' ');
+      cleanBody = cleanBody.replace(/&nbsp;/g, ' ');
+      cleanBody = cleanBody.replace(/&amp;/g, '&');
+      cleanBody = cleanBody.replace(/&lt;/g, '<');
+      cleanBody = cleanBody.replace(/&gt;/g, '>');
+      cleanBody = cleanBody.replace(/\s+/g, ' ').trim();
+    }
+    
+    // Decode quoted-printable
+    cleanBody = cleanBody.replace(/=\r?\n/g, '');
+    cleanBody = cleanBody.replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    
+    res.json({ 
+      success: true, 
+      body: cleanBody.substring(0, 10000), // Limit to 10k chars
+      to: emailTo
+    });
+    
+  } catch (error) {
+    console.error('Fetch body error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch email: ' + error.message
+    });
+  }
+});
+
+/**
  * POST /api/email/test-imap
  * Test IMAP connection
  */
