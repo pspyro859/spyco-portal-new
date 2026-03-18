@@ -317,16 +317,20 @@ function renderProjects() {
 
 // ── Invoices ──────────────────────────────────────────────────
 function renderInvoices() {
-  const data = window.appData.invoices;
+  const data = window.appData.invoices || [];
   const tbody = document.getElementById('invoices-tbody');
   
   // Calculate totals
   let unpaidTotal = 0;
   let overdueTotal = 0;
   let paidTotal = 0;
+  let partialPaid = 0;
+  let disputed = 0;
   
   data.forEach(i => {
     const amount = parseFloat(i.amount) || 0;
+    const paidAmount = parseFloat(i.paidAmount) || 0;
+    
     if (i.status === 'Paid') {
       paidTotal += amount;
     } else if (i.status === 'Overdue') {
@@ -334,33 +338,74 @@ function renderInvoices() {
       unpaidTotal += amount;
     } else if (i.status === 'Unpaid') {
       unpaidTotal += amount;
+    } else if (i.status === 'Partial') {
+      partialPaid += paidAmount;
+      unpaidTotal += (amount - paidAmount);
+    } else if (i.status === 'Disputed') {
+      disputed += amount;
     }
   });
   
   // Update summary cards
-  document.getElementById('invoice-unpaid').textContent = '$' + unpaidTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
-  document.getElementById('invoice-overdue').textContent = '$' + overdueTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
-  document.getElementById('invoice-paid').textContent = '$' + paidTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
+  const unpaidEl = document.getElementById('invoice-unpaid');
+  const overdueEl = document.getElementById('invoice-overdue');
+  const paidEl = document.getElementById('invoice-paid');
+  
+  if (unpaidEl) unpaidEl.textContent = '$' + unpaidTotal.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (overdueEl) overdueEl.textContent = '$' + overdueTotal.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (paidEl) paidEl.textContent = '$' + (paidTotal + partialPaid).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:32px;">No invoices yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:32px;">No invoices yet. Click "+ Add Invoice" to create one.</td></tr>';
     return;
   }
   
-  tbody.innerHTML = data.map(i => `
-    <tr>
+  // Sort by date descending
+  const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  tbody.innerHTML = sortedData.map(i => {
+    const amount = parseFloat(i.amount) || 0;
+    const paidAmount = parseFloat(i.paidAmount) || 0;
+    const remaining = i.status === 'Partial' ? amount - paidAmount : amount;
+    
+    return `
+    <tr data-status="${i.status}">
       <td>${i.date ? formatDate(i.date) : '—'}</td>
-      <td><strong>${esc(i.supplier)}</strong></td>
+      <td><strong>${esc(i.supplier)}</strong><br><small class="text-muted">${esc(i.description || '')}</small></td>
       <td><span class="code">${esc(i.site || '-')}</span></td>
-      <td><strong style="color:var(--success);">$${parseFloat(i.amount || 0).toLocaleString()}</strong></td>
+      <td style="text-align:right;">
+        <strong style="color:${i.status === 'Paid' ? 'var(--success)' : 'var(--text)'};">$${amount.toLocaleString('en-AU', {minimumFractionDigits: 2})}</strong>
+        ${i.status === 'Partial' ? '<br><small class="text-muted">Paid: $' + paidAmount.toLocaleString('en-AU', {minimumFractionDigits: 2}) + '</small>' : ''}
+      </td>
       <td>${invoiceStatusBadge(i.status)}</td>
-      <td class="text-muted" style="font-family:var(--mono);font-size:0.8rem;">${esc(i.commsRef) || '—'}</td>
+      <td>${i.dueDate ? formatDate(i.dueDate) : '—'}</td>
+      <td class="text-muted" style="font-family:var(--mono);font-size:0.75rem;">${esc(i.commsRef || i.invoiceRef || '') || '—'}</td>
       <td class="table-actions">
-        <button class="btn btn-icon btn-ghost" onclick="editInvoice('${i.id}')">✏️</button>
-        <button class="btn btn-icon btn-ghost delete" onclick="deleteInvoice('${i.id}')">🗑</button>
+        <button class="btn btn-icon btn-ghost" onclick="editInvoice('${i.id}')" title="Edit">✏️</button>
+        ${i.status !== 'Paid' ? `<button class="btn btn-icon btn-ghost" onclick="markInvoicePaid('${i.id}')" title="Mark Paid">✓</button>` : ''}
+        <button class="btn btn-icon btn-ghost delete" onclick="deleteInvoice('${i.id}')" title="Delete">🗑</button>
       </td>
     </tr>
-  `).join('');
+  `}).join('');
+}
+
+function togglePaidDate() {
+  const status = document.getElementById('inv-status').value;
+  document.getElementById('paid-date-group').style.display = (status === 'Paid' || status === 'Partial') ? 'block' : 'none';
+  document.getElementById('partial-amount-group').style.display = status === 'Partial' ? 'block' : 'none';
+}
+
+function markInvoicePaid(id) {
+  if (!confirm('Mark this invoice as paid?')) return;
+  
+  const invoices = DB.get('invoices') || [];
+  const idx = invoices.findIndex(i => i.id === id);
+  if (idx >= 0) {
+    invoices[idx].status = 'Paid';
+    invoices[idx].paidDate = new Date().toISOString().split('T')[0];
+    DB.set('invoices', invoices);
+    loadLocalData();
+  }
 }
 
 // ── Reference Tables ──────────────────────────────────────────
@@ -452,37 +497,68 @@ function deleteRefCode(idx) {
 
 // ── SPY COMMS Builder ─────────────────────────────────────────
 function populateDropdowns() {
+  // Load reference data from SPYCO_REFERENCE if available
+  const ref = window.SPYCO_REFERENCE || {};
+  
   // Subject
   const subjectSelect = document.getElementById('comms-subject');
-  subjectSelect.innerHTML = '<option value="">-- None --</option>' + 
-    refData.subject.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
+  const subjects = ref.Subject || refData.subject || [];
+  subjectSelect.innerHTML = '<option value="">-- Select --</option>' + 
+    subjects.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
   
   // Systems
   const systemsSelect = document.getElementById('comms-systems');
-  systemsSelect.innerHTML = '<option value="">-- None --</option>' + 
-    refData.systems.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
+  const systems = ref.Systems || refData.systems || [];
+  systemsSelect.innerHTML = '<option value="">-- Select --</option>' + 
+    systems.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
   
   // Structure
   const structureSelect = document.getElementById('comms-structure');
-  structureSelect.innerHTML = '<option value="">-- None --</option>' + 
-    refData.structure.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
+  const structures = ref.Structure || refData.structure || [];
+  structureSelect.innerHTML = '<option value="">-- Select --</option>' + 
+    structures.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
   
-  // Sites (from properties)
+  // Sites
   const sitesSelect = document.getElementById('comms-sites');
-  sitesSelect.innerHTML = '<option value="">-- None --</option>' + 
-    refData.sites.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
+  const sites = ref.Sites || refData.sites || [];
+  sitesSelect.innerHTML = '<option value="">-- Select --</option>' + 
+    sites.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
   
-  // Suppliers (from contacts)
+  // Suppliers
   const suppliersSelect = document.getElementById('comms-suppliers');
-  suppliersSelect.innerHTML = '<option value="">-- None --</option>' + 
-    refData.suppliers.map(s => `<option value="${s.code}">[${s.code}] ${s.name}</option>`).join('');
+  const suppliers = ref.Suppliers || refData.suppliers || [];
+  suppliersSelect.innerHTML = '<option value="">-- Select --</option>' + 
+    suppliers.map(s => `<option value="${s.code}">[${s.code}] ${s.name}</option>`).join('');
+  
+  // Financial Year (for archive)
+  const fySelect = document.getElementById('comms-fy');
+  if (fySelect) {
+    const fys = ref.Financial || [];
+    fySelect.innerHTML = '<option value="">-- Select FY --</option>' + 
+      fys.map(f => `<option value="${f.code}">${f.code} - ${f.name}</option>`).join('');
+  }
+  
+  // Quarters
+  const quarterSelect = document.getElementById('comms-quarter');
+  if (quarterSelect) {
+    const quarters = ref.Quarters || [];
+    quarterSelect.innerHTML = '<option value="">-- Select Quarter --</option>' + 
+      quarters.map(q => `<option value="${q.code}">${q.code} - ${q.name}</option>`).join('');
+  }
   
   // Also populate site selects in modals
-  const siteOptions = '<option value="">-- Select --</option>' + refData.sites.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
+  const siteOptions = '<option value="">-- Select --</option>' + sites.map(s => `<option value="${s.code}">${s.code} - ${s.name}</option>`).join('');
   ['pr-site', 'inv-site'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = siteOptions;
   });
+  
+  // Populate supplier select in invoice modal
+  const invSupplierSelect = document.getElementById('inv-supplier');
+  if (invSupplierSelect) {
+    invSupplierSelect.innerHTML = '<option value="">-- Select --</option>' + 
+      suppliers.map(s => `<option value="${s.name}">[${s.code}] ${s.name}</option>`).join('');
+  }
 }
 
 function buildCommsOutput() {
@@ -492,13 +568,25 @@ function buildCommsOutput() {
   const structure = document.getElementById('comms-structure').value;
   const sites = document.getElementById('comms-sites').value;
   const suppliers = document.getElementById('comms-suppliers').value;
-  const suffix = document.getElementById('comms-suffix').value.trim();
+  const suffix = document.getElementById('comms-suffix')?.value?.trim() || '';
+  const fy = document.getElementById('comms-fy')?.value || '';
+  const quarter = document.getElementById('comms-quarter')?.value || '';
   
   // Build date string (YYYYMMDD)
   const dateStr = date ? date.replace(/-/g, '') : '';
   
+  // Check if archive system is selected (6-ARC)
+  const isArchive = systems === '6-ARC';
+  
   // Build parts array
-  const parts = [dateStr, subject, systems, structure, sites, suppliers].filter(Boolean);
+  let parts;
+  if (isArchive && (fy || quarter)) {
+    // Archive format: FY_Q_SUBJECT_STRUCTURE_SITE_SUPPLIER
+    parts = [fy, quarter, subject, structure, sites, suppliers].filter(Boolean);
+  } else {
+    // Standard format: DATE_SUBJECT_SYSTEM_STRUCTURE_SITE_SUPPLIER
+    parts = [dateStr, subject, systems, structure, sites, suppliers].filter(Boolean);
+  }
   
   // Email subject
   const emailOutput = parts.join('_') || dateStr || '-';
@@ -508,7 +596,9 @@ function buildCommsOutput() {
   let fileOutput = emailOutput;
   if (suffix) fileOutput += '_' + suffix;
   document.getElementById('comms-file-output').textContent = fileOutput;
-  document.getElementById('comms-preview').textContent = fileOutput;
+  
+  const previewEl = document.getElementById('comms-preview');
+  if (previewEl) previewEl.textContent = fileOutput;
 }
 
 function clearCommsForm() {
@@ -518,7 +608,12 @@ function clearCommsForm() {
   document.getElementById('comms-structure').value = '';
   document.getElementById('comms-sites').value = '';
   document.getElementById('comms-suppliers').value = '';
-  document.getElementById('comms-suffix').value = '';
+  const suffixEl = document.getElementById('comms-suffix');
+  if (suffixEl) suffixEl.value = '';
+  const fyEl = document.getElementById('comms-fy');
+  if (fyEl) fyEl.value = '';
+  const quarterEl = document.getElementById('comms-quarter');
+  if (quarterEl) quarterEl.value = '';
   buildCommsOutput();
 }
 
@@ -751,32 +846,95 @@ async function deleteProject(id) {
 }
 
 async function saveInvoice() {
-  const supplier = document.getElementById('inv-supplier').value.trim();
+  const supplierSelect = document.getElementById('inv-supplier');
+  const supplier = supplierSelect.value || supplierSelect.options[supplierSelect.selectedIndex]?.text || '';
+  const amount = document.getElementById('inv-amount').value;
+  
   if (!supplier) { alert('Supplier is required.'); return; }
+  if (!amount) { alert('Amount is required.'); return; }
+  
+  const status = document.getElementById('inv-status').value;
   
   const invoice = {
     date: document.getElementById('inv-date').value,
-    supplier,
+    dueDate: document.getElementById('inv-due').value,
+    supplier: supplier,
     site: document.getElementById('inv-site').value,
     entity: document.getElementById('inv-entity').value,
-    amount: document.getElementById('inv-amount').value,
-    status: document.getElementById('inv-status').value,
-    desc: document.getElementById('inv-desc').value.trim(),
+    invoiceRef: document.getElementById('inv-ref').value.trim(),
+    amount: parseFloat(amount) || 0,
+    gst: parseFloat(document.getElementById('inv-gst').value) || 0,
+    status: status,
+    paidDate: status === 'Paid' || status === 'Partial' ? document.getElementById('inv-paid-date').value : null,
+    paidAmount: status === 'Partial' ? parseFloat(document.getElementById('inv-paid-amount').value) || 0 : null,
+    description: document.getElementById('inv-desc').value.trim(),
+    commsRef: document.getElementById('inv-comms').value.trim(),
     notes: document.getElementById('inv-notes').value.trim()
   };
   
   try {
-    await API.addInvoice(invoice);
+    const editId = document.getElementById('invoice-modal').dataset.editId;
+    if (editId) {
+      await API.updateInvoice(editId, invoice);
+    } else {
+      await API.addInvoice(invoice);
+    }
     closeModal('invoice-modal');
+    clearInvoiceForm();
     loadAllData();
   } catch (e) {
     const invoices = DB.get('invoices') || [];
-    invoice.id = Date.now().toString(36);
-    invoices.push(invoice);
+    const editId = document.getElementById('invoice-modal').dataset.editId;
+    if (editId) {
+      const idx = invoices.findIndex(i => i.id === editId);
+      if (idx >= 0) invoices[idx] = { ...invoices[idx], ...invoice };
+    } else {
+      invoice.id = Date.now().toString(36);
+      invoices.push(invoice);
+    }
     DB.set('invoices', invoices);
     closeModal('invoice-modal');
+    clearInvoiceForm();
     loadLocalData();
   }
+}
+
+function clearInvoiceForm() {
+  ['inv-date','inv-due','inv-supplier','inv-site','inv-ref','inv-amount','inv-gst','inv-paid-date','inv-paid-amount','inv-desc','inv-comms','inv-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('inv-status').value = 'Unpaid';
+  document.getElementById('inv-entity').value = 'SPY';
+  togglePaidDate();
+  delete document.getElementById('invoice-modal').dataset.editId;
+}
+
+function editInvoice(id) {
+  const invoices = DB.get('invoices') || [];
+  const invoice = invoices.find(i => i.id === id);
+  if (!invoice) return;
+  
+  document.getElementById('invoice-modal').dataset.editId = id;
+  document.querySelector('#invoice-modal .modal-title').textContent = 'Edit Invoice';
+  
+  document.getElementById('inv-date').value = invoice.date || '';
+  document.getElementById('inv-due').value = invoice.dueDate || '';
+  document.getElementById('inv-supplier').value = invoice.supplier || '';
+  document.getElementById('inv-site').value = invoice.site || '';
+  document.getElementById('inv-entity').value = invoice.entity || 'SPY';
+  document.getElementById('inv-ref').value = invoice.invoiceRef || '';
+  document.getElementById('inv-amount').value = invoice.amount || '';
+  document.getElementById('inv-gst').value = invoice.gst || '';
+  document.getElementById('inv-status').value = invoice.status || 'Unpaid';
+  document.getElementById('inv-paid-date').value = invoice.paidDate || '';
+  document.getElementById('inv-paid-amount').value = invoice.paidAmount || '';
+  document.getElementById('inv-desc').value = invoice.description || invoice.desc || '';
+  document.getElementById('inv-comms').value = invoice.commsRef || '';
+  document.getElementById('inv-notes').value = invoice.notes || '';
+  
+  togglePaidDate();
+  openModal('invoice-modal');
 }
 
 async function deleteInvoice(id) {

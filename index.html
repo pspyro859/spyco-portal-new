@@ -366,11 +366,12 @@
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Supplier</th>
+                <th>Supplier / Description</th>
                 <th>Site</th>
-                <th>Amount</th>
+                <th style="text-align:right;">Amount</th>
                 <th>Status</th>
-                <th>SPY COMMS Ref</th>
+                <th>Due Date</th>
+                <th>Reference</th>
                 <th></th>
               </tr>
             </thead>
@@ -509,46 +510,69 @@
         </div>
         
         <div class="comms-builder">
+          <!-- Row 1: Core Fields -->
           <div class="comms-grid">
+            <div class="field-group">
+              <label>Subject</label>
+              <select id="comms-subject" onchange="buildCommsOutput()">
+                <option value="">-- Select --</option>
+              </select>
+            </div>
             <div class="field-group">
               <label>Date</label>
               <input type="date" id="comms-date" onchange="buildCommsOutput()" />
             </div>
             <div class="field-group">
-              <label>Subject</label>
-              <select id="comms-subject" onchange="buildCommsOutput()">
-                <option value="">-- None --</option>
-              </select>
-            </div>
-            <div class="field-group">
               <label>Systems</label>
               <select id="comms-systems" onchange="buildCommsOutput()">
-                <option value="">-- None --</option>
+                <option value="">-- Select --</option>
               </select>
             </div>
             <div class="field-group">
-              <label>Structure</label>
+              <label>Structure (Entity)</label>
               <select id="comms-structure" onchange="buildCommsOutput()">
-                <option value="">-- None --</option>
+                <option value="">-- Select --</option>
               </select>
             </div>
             <div class="field-group">
               <label>Sites</label>
               <select id="comms-sites" onchange="buildCommsOutput()">
-                <option value="">-- None --</option>
+                <option value="">-- Select --</option>
               </select>
             </div>
             <div class="field-group">
               <label>Suppliers</label>
               <select id="comms-suppliers" onchange="buildCommsOutput()">
-                <option value="">-- None --</option>
+                <option value="">-- Select --</option>
               </select>
             </div>
           </div>
           
+          <!-- Row 2: Archive Fields (FY & Quarter) -->
+          <div class="card" style="margin-top:16px; padding:16px; background:var(--bg);">
+            <div class="card-title" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+              📁 Archive Options (for [6-ARC] System)
+            </div>
+            <div class="comms-grid" style="grid-template-columns: repeat(2, 1fr);">
+              <div class="field-group">
+                <label>Financial Year</label>
+                <select id="comms-fy" onchange="buildCommsOutput()">
+                  <option value="">-- Select FY --</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Quarter</label>
+                <select id="comms-quarter" onchange="buildCommsOutput()">
+                  <option value="">-- Select Quarter --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Output: Email Subject -->
           <div class="comms-output">
             <div class="comms-output-label">
-              Email Subject
+              COPY FOR EMAIL SUBJECT
               <button class="copy-btn" onclick="copyToClipboard('comms-email-output')">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copy
@@ -557,7 +581,7 @@
             <div class="comms-output-value" id="comms-email-output">-</div>
           </div>
           
-          <div class="comms-output">
+          <!-- Output: File Name -->
             <div class="comms-output-label">
               File Name
               <button class="copy-btn" onclick="copyToClipboard('comms-file-output')">
@@ -910,17 +934,33 @@
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="field-group"><label>Date</label><input type="date" id="inv-date" /></div>
-        <div class="field-group"><label>Supplier</label><input type="text" id="inv-supplier" placeholder="Supplier name" /></div>
+        <div class="field-group"><label>Invoice Date *</label><input type="date" id="inv-date" /></div>
+        <div class="field-group"><label>Due Date</label><input type="date" id="inv-due" /></div>
+        <div class="field-group"><label>Supplier *</label><select id="inv-supplier"></select></div>
         <div class="field-group"><label>Site</label><select id="inv-site"></select></div>
         <div class="field-group"><label>Entity</label>
-          <select id="inv-entity"><option>SPY</option><option>KAL</option><option>REV</option><option>VS</option></select>
+          <select id="inv-entity"><option>SPY</option><option>KAL</option><option>REV</option><option>VS</option><option>JS</option><option>PS</option></select>
         </div>
-        <div class="field-group"><label>Amount ($)</label><input type="number" id="inv-amount" placeholder="0.00" step="0.01" /></div>
-        <div class="field-group"><label>Status</label>
-          <select id="inv-status"><option>Unpaid</option><option>Paid</option><option>Overdue</option><option>Disputed</option></select>
+        <div class="field-group"><label>Invoice # (Ref)</label><input type="text" id="inv-ref" placeholder="INV-001" /></div>
+        <div class="field-group"><label>Amount ($) *</label><input type="number" id="inv-amount" placeholder="0.00" step="0.01" /></div>
+        <div class="field-group"><label>GST ($)</label><input type="number" id="inv-gst" placeholder="0.00" step="0.01" /></div>
+        <div class="field-group"><label>Status *</label>
+          <select id="inv-status" onchange="togglePaidDate()">
+            <option value="Unpaid">Unpaid</option>
+            <option value="Paid">Paid</option>
+            <option value="Overdue">Overdue</option>
+            <option value="Disputed">Disputed</option>
+            <option value="Partial">Partial Payment</option>
+          </select>
+        </div>
+        <div class="field-group" id="paid-date-group" style="display:none;">
+          <label>Date Paid</label><input type="date" id="inv-paid-date" />
+        </div>
+        <div class="field-group" id="partial-amount-group" style="display:none;">
+          <label>Amount Paid ($)</label><input type="number" id="inv-paid-amount" placeholder="0.00" step="0.01" />
         </div>
         <div class="field-group form-full"><label>Description</label><input type="text" id="inv-desc" placeholder="Invoice description" /></div>
+        <div class="field-group form-full"><label>SPY COMMS Ref</label><input type="text" id="inv-comms" placeholder="e.g. 20260318_INVOICE_3-SUP_SPY_12-LLO_BPP" /></div>
         <div class="field-group form-full"><label>Notes</label><textarea id="inv-notes" placeholder="Any additional notes..."></textarea></div>
       </div>
     </div>
@@ -951,6 +991,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/reference.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 </body>
