@@ -122,13 +122,23 @@
     </div>
   </aside>
   
+  <!-- Mobile Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
+  
   <!-- MAIN CONTENT -->
   <main class="main-content">
     <header class="header">
+      <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
       <div class="header-title" id="header-title">Dashboard</div>
       <div class="header-right">
-        <span id="header-date"></span>
-        <span>|</span>
+        <span id="current-date" id="header-date"></span>
+        <span class="hide-mobile">|</span>
         <span id="header-user">User</span>
       </div>
     </header>
@@ -213,7 +223,7 @@
             <table class="data-table" style="font-size:0.85rem;">
               <thead><tr><th>Site</th><th>Status</th><th>Entity</th></tr></thead>
               <tbody id="dashboard-properties"></tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       </div>
@@ -249,7 +259,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" placeholder="Search properties..." oninput="filterTable(this,'properties-tbody')" />
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th><input type="checkbox" class="table-checkbox" onclick="toggleAllCheckboxes(this,'properties-tbody')" /></th>
@@ -264,7 +274,7 @@
               </tr>
             </thead>
             <tbody id="properties-tbody"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -283,7 +293,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" placeholder="Search suppliers..." oninput="filterTable(this,'contacts-tbody')" />
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th>Code</th>
@@ -295,7 +305,7 @@
               </tr>
             </thead>
             <tbody id="contacts-tbody"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -314,7 +324,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" placeholder="Search projects..." oninput="filterTable(this,'projects-tbody')" />
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -327,7 +337,7 @@
               </tr>
             </thead>
             <tbody id="projects-tbody"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -362,7 +372,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" placeholder="Search invoices..." oninput="filterTable(this,'invoices-tbody')" />
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -376,7 +386,7 @@
               </tr>
             </thead>
             <tbody id="invoices-tbody"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -479,7 +489,7 @@
             <span>Recent Documents</span>
             <button class="btn btn-secondary btn-sm" onclick="refreshDocuments()">↻ Refresh</button>
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th>File Name</th>
@@ -492,7 +502,7 @@
             <tbody id="documents-tbody">
               <tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No documents uploaded yet.</td></tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -625,7 +635,7 @@
             <button class="btn btn-primary" onclick="openAddRefModal()">+ Add</button>
           </div>
           
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th>Code</th>
@@ -635,7 +645,7 @@
               </tr>
             </thead>
             <tbody id="reference-tbody"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       
@@ -683,7 +693,7 @@
               <button class="btn btn-primary" onclick="fileSelectedEmails()" id="file-selected-btn" disabled>File Selected</button>
             </div>
           </div>
-          <table class="data-table">
+          <div class="table-responsive"><table class="data-table">
             <thead>
               <tr>
                 <th style="width:40px;"><input type="checkbox" id="select-all-emails" onchange="toggleAllEmails(this)" /></th>
@@ -697,7 +707,7 @@
             <tbody id="emails-tbody">
               <tr><td colspan="6" class="text-center text-muted" style="padding:32px;">Click "Scan Emails" to fetch your emails.</td></tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
         
         <!-- Email Preview Panel -->

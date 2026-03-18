@@ -5,6 +5,37 @@
 
 'use strict';
 
+// ── Mobile Menu Functions ──────────────────────────────────────
+function toggleMobileMenu() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+  document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+function closeMobileMenu() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// Close mobile menu when clicking a nav item
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.nav-item') && window.innerWidth <= 767) {
+    closeMobileMenu();
+  }
+});
+
+// Close mobile menu on window resize to desktop
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 767) {
+    closeMobileMenu();
+  }
+});
+
 // ── State ─────────────────────────────────────────────────────
 let currentRefTab = 'subject';
 
