@@ -971,6 +971,14 @@
         </div>
         <div class="field-group form-full"><label>Description</label><input type="text" id="inv-desc" placeholder="Invoice description" /></div>
         <div class="field-group form-full"><label>SPY COMMS Ref</label><input type="text" id="inv-comms" placeholder="e.g. 20260318_INVOICE_3-SUP_SPY_12-LLO_BPP" /></div>
+        <div class="field-group form-full">
+          <label>Attach Invoice File</label>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <input type="file" id="inv-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="flex:1;" />
+            <span id="inv-file-status" class="text-muted" style="font-size:0.85rem;"></span>
+          </div>
+          <small class="text-muted">PDF, images, or Word documents (max 10MB)</small>
+        </div>
         <div class="field-group form-full"><label>Notes</label><textarea id="inv-notes" placeholder="Any additional notes..."></textarea></div>
       </div>
     </div>

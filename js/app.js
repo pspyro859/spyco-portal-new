@@ -410,10 +410,14 @@ function renderInvoices() {
       </td>
       <td>${invoiceStatusBadge(i.status)}</td>
       <td>${i.dueDate ? formatDate(i.dueDate) : '—'}</td>
-      <td class="text-muted" style="font-family:var(--mono);font-size:0.75rem;">${esc(i.commsRef || i.invoiceRef || '') || '—'}</td>
+      <td class="text-muted" style="font-family:var(--mono);font-size:0.75rem;">
+        ${i.fileUrl ? `<a href="${i.fileUrl}" target="_blank" title="View file">📎</a> ` : ''}
+        ${esc(i.commsRef || i.invoiceRef || '') || '—'}
+      </td>
       <td class="table-actions">
         <button class="btn btn-icon btn-ghost" onclick="editInvoice('${i.id}')" title="Edit">✏️</button>
         ${i.status !== 'Paid' ? `<button class="btn btn-icon btn-ghost" onclick="markInvoicePaid('${i.id}')" title="Mark Paid">✓</button>` : ''}
+        ${i.fileUrl ? `<a href="${i.fileUrl}" target="_blank" class="btn btn-icon btn-ghost" title="View Invoice">📄</a>` : ''}
         <button class="btn btn-icon btn-ghost delete" onclick="deleteInvoice('${i.id}')" title="Delete">🗑</button>
       </td>
     </tr>
@@ -903,6 +907,46 @@ async function saveInvoice() {
     notes: document.getElementById('inv-notes').value.trim()
   };
   
+  // Handle file upload
+  const fileInput = document.getElementById('inv-file');
+  const file = fileInput.files[0];
+  
+  if (file) {
+    document.getElementById('inv-file-status').textContent = 'Uploading...';
+    
+    // Generate SPY COMMS filename for the invoice
+    const date = invoice.date ? invoice.date.replace(/-/g, '') : new Date().toISOString().slice(0,10).replace(/-/g, '');
+    const supplierCode = (invoice.supplier || 'SUP').substring(0, 3).toUpperCase();
+    const siteCode = invoice.site || 'GEN';
+    const ext = file.name.split('.').pop();
+    const spyCommsFileName = `${date}_INVOICE_3-SUP_SPY_${siteCode}_${supplierCode}.${ext}`;
+    
+    // Upload file
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileName', spyCommsFileName);
+    formData.append('folderPath', `/${siteCode}/INVOICE/`);
+    
+    try {
+      const uploadRes = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      
+      if (uploadData.success) {
+        invoice.fileUrl = uploadData.driveUrl || uploadData.localPath;
+        invoice.fileName = spyCommsFileName;
+        document.getElementById('inv-file-status').textContent = '✓ Uploaded';
+      } else {
+        document.getElementById('inv-file-status').textContent = 'Upload failed';
+      }
+    } catch (uploadErr) {
+      console.error('File upload error:', uploadErr);
+      document.getElementById('inv-file-status').textContent = 'Upload error';
+    }
+  }
+  
   try {
     const editId = document.getElementById('invoice-modal').dataset.editId;
     if (editId) {
@@ -935,6 +979,10 @@ function clearInvoiceForm() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const fileInput = document.getElementById('inv-file');
+  if (fileInput) fileInput.value = '';
+  const fileStatus = document.getElementById('inv-file-status');
+  if (fileStatus) fileStatus.textContent = '';
   document.getElementById('inv-status').value = 'Unpaid';
   document.getElementById('inv-entity').value = 'SPY';
   togglePaidDate();
