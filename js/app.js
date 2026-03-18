@@ -452,7 +452,20 @@ function switchRefTab(tab, el) {
 }
 
 function renderRefTable() {
-  const data = refData[currentRefTab] || [];
+  // Map tab names to SPYCO_REFERENCE keys
+  const refKeyMap = {
+    'subject': 'Subject',
+    'systems': 'Systems',
+    'structure': 'Structure',
+    'sites': 'Sites',
+    'suppliers': 'Suppliers',
+    'financial': 'Financial',
+    'quarters': 'Quarters'
+  };
+  
+  const refKey = refKeyMap[currentRefTab] || currentRefTab;
+  const ref = window.SPYCO_REFERENCE || {};
+  const data = ref[refKey] || refData[currentRefTab] || [];
   const tbody = document.getElementById('reference-tbody');
   
   if (!data.length) {
@@ -463,8 +476,8 @@ function renderRefTable() {
   tbody.innerHTML = data.map((item, idx) => `
     <tr>
       <td><span class="code" style="color:var(--accent);">${esc(item.code)}</span></td>
-      <td>${esc(item.name)}</td>
-      <td class="text-muted">${esc(item.desc || '—')}</td>
+      <td><strong>${esc(item.name)}</strong></td>
+      <td class="text-muted" style="max-width:400px;">${esc(item.description || item.desc || '—')}</td>
       <td class="table-actions">
         <button class="btn btn-icon btn-ghost" onclick="editRefCode(${idx})">✏️</button>
         <button class="btn btn-icon btn-ghost delete" onclick="deleteRefCode(${idx})">🗑</button>
@@ -632,8 +645,20 @@ function buildCommsOutput() {
   if (suffix) fileOutput += '_' + suffix;
   document.getElementById('comms-file-output').textContent = fileOutput;
   
-  const previewEl = document.getElementById('comms-preview');
-  if (previewEl) previewEl.textContent = fileOutput;
+  // Update Drive search link
+  const driveLink = document.getElementById('drive-search-link');
+  if (driveLink && emailOutput !== '-') {
+    driveLink.href = `https://drive.google.com/drive/search?q=${encodeURIComponent(emailOutput)}`;
+  }
+}
+
+function searchDrive() {
+  const searchTerm = document.getElementById('comms-email-output').textContent;
+  if (searchTerm && searchTerm !== '-') {
+    window.open(`https://drive.google.com/drive/search?q=${encodeURIComponent(searchTerm)}`, '_blank');
+  } else {
+    alert('Please select some options first to generate a search term.');
+  }
 }
 
 function clearCommsForm() {

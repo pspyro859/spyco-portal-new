@@ -592,18 +592,32 @@
           </div>
           
           <!-- Output: File Name -->
+          <div class="comms-output">
             <div class="comms-output-label">
-              File Name
+              COPY FOR FILE NAME
               <button class="copy-btn" onclick="copyToClipboard('comms-file-output')">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copy
               </button>
             </div>
             <div class="comms-output-value" id="comms-file-output">-</div>
-            <div class="flex items-center gap-8 mt-16">
-              <input type="text" id="comms-suffix" placeholder="Suffix (e.g. 99123)" oninput="buildCommsOutput()" style="flex:1;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);" />
+          </div>
+          
+          <!-- Suffix Input -->
+          <div style="margin-top:16px;">
+            <label style="display:block; margin-bottom:8px; color:var(--text-muted); font-size:0.85rem;">Optional Suffix (invoice #, reference, etc.)</label>
+            <input type="text" id="comms-suffix" placeholder="e.g. INV-001" oninput="buildCommsOutput()" style="width:100%;max-width:300px;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);" />
+          </div>
+          
+          <!-- Google Drive Search Link -->
+          <div style="margin-top:24px; padding:16px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; margin-bottom:4px;">Search Google Drive</div>
+                <div class="text-muted" style="font-size:0.85rem;">Search for files with this SPY COMMS reference</div>
+              </div>
+              <a href="#" id="drive-search-link" class="btn btn-secondary" onclick="searchDrive()" target="_blank">🔍 Search Drive</a>
             </div>
-            <div class="text-muted" style="margin-top:8px;font-size:0.8rem;">Preview: <span id="comms-preview" style="color:var(--accent);">-</span></div>
           </div>
         </div>
       </div>
@@ -624,6 +638,7 @@
           <div class="tab" data-tab="sites" onclick="switchRefTab('sites',this)">Sites</div>
           <div class="tab" data-tab="suppliers" onclick="switchRefTab('suppliers',this)">Suppliers</div>
           <div class="tab" data-tab="financial" onclick="switchRefTab('financial',this)">Financial</div>
+          <div class="tab" data-tab="quarters" onclick="switchRefTab('quarters',this)">Quarters</div>
         </div>
         
         <div class="card">
