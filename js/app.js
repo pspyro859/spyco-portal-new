@@ -892,9 +892,11 @@ function loadEmailSettings() {
   if (settings.folder) document.getElementById('set-folder').value = settings.folder;
   if (settings.storageType) document.getElementById('set-storage-type').value = settings.storageType;
   if (settings.driveFolder) document.getElementById('set-drive-folder').value = settings.driveFolder;
-  if (settings.folderStructure) document.getElementById('set-folder-structure').value = settings.folderStructure;
+  if (settings.primaryFolder) document.getElementById('set-primary-folder').value = settings.primaryFolder;
+  if (settings.secondaryFolder) document.getElementById('set-secondary-folder').value = settings.secondaryFolder;
   toggleStorageOptions();
   updateEmailStatus();
+  updateFolderPreview();
 }
 
 function saveEmailSettings() {
@@ -920,10 +922,51 @@ function saveStorageSettings() {
 
 function saveFilingRules() {
   const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
-  settings.folderStructure = document.getElementById('set-folder-structure').value;
+  settings.primaryFolder = document.getElementById('set-primary-folder').value;
+  settings.secondaryFolder = document.getElementById('set-secondary-folder').value;
   localStorage.setItem('spyco_email_settings', JSON.stringify(settings));
   alert('Filing rules saved!');
+  updateFolderPreview();
 }
+
+function updateFolderPreview() {
+  const primary = document.getElementById('set-primary-folder')?.value || 'site';
+  const secondary = document.getElementById('set-secondary-folder')?.value || 'subject';
+  
+  // Example SPY COMMS ref: 20260318_INVOICE_ELEC_RESI_12-LLO_BAY
+  const example = {
+    date: '20260318',
+    subject: 'INVOICE',
+    system: 'ELEC',
+    structure: 'RESI',
+    site: '12-LLO',
+    supplier: 'BAY'
+  };
+  
+  const getValue = (key) => {
+    if (key === 'date') return example.date.substring(0,4) + '/' + example.date.substring(4,6);
+    return example[key] || '';
+  };
+  
+  let path = '/' + getValue(primary);
+  if (secondary !== 'none') {
+    path += '/' + getValue(secondary);
+  }
+  path += '/20260318_INVOICE_ELEC_RESI_12-LLO_BAY.eml';
+  
+  const preview = document.getElementById('folder-preview');
+  if (preview) preview.textContent = path;
+}
+
+// Add event listeners for folder preview
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const primarySelect = document.getElementById('set-primary-folder');
+    const secondarySelect = document.getElementById('set-secondary-folder');
+    if (primarySelect) primarySelect.addEventListener('change', updateFolderPreview);
+    if (secondarySelect) secondarySelect.addEventListener('change', updateFolderPreview);
+  }, 500);
+});
 
 function toggleStorageOptions() {
   const type = document.getElementById('set-storage-type').value;
@@ -1005,7 +1048,9 @@ function scanEmails() {
       password: settings.password,
       ssl: settings.ssl,
       folder: settings.folder || 'INBOX',
-      limit: 100
+      limit: 100,
+      primaryFolder: settings.primaryFolder || 'site',
+      secondaryFolder: settings.secondaryFolder || 'subject'
     })
   })
   .then(res => res.json())

@@ -56,11 +56,29 @@ function parseSpyCommsRef(subject) {
 }
 
 /**
+ * Build folder path based on filing rules
+ */
+function buildFolderPath(parsed, primaryFolder, secondaryFolder) {
+  const getValue = (key) => {
+    if (key === 'date') {
+      return parsed.date.substring(0,4) + '/' + parsed.date.substring(4,6);
+    }
+    return parsed[key] || '';
+  };
+  
+  let path = '/' + getValue(primaryFolder || 'site');
+  if (secondaryFolder && secondaryFolder !== 'none') {
+    path += '/' + getValue(secondaryFolder);
+  }
+  return path + '/';
+}
+
+/**
  * POST /api/email/scan
  * Scan IMAP mailbox for emails with SPY COMMS references
  */
 router.post('/scan', async (req, res) => {
-  const { imapServer, imapPort, email, password, ssl, folder, limit } = req.body;
+  const { imapServer, imapPort, email, password, ssl, folder, limit, primaryFolder, secondaryFolder } = req.body;
   
   if (!imapServer || !email || !password) {
     return res.status(400).json({
@@ -141,7 +159,7 @@ router.post('/scan', async (req, res) => {
               const ref = parseSpyCommsRef(emailData.subject);
               if (ref) {
                 emailData.spyCommsRef = ref.fullRef;
-                emailData.filedTo = `/${ref.site}/${ref.subject}/`;
+                emailData.filedTo = buildFolderPath(ref, primaryFolder, secondaryFolder);
                 emailData.parsed = ref;
                 results.filed++;
               } else {

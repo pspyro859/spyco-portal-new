@@ -648,17 +648,37 @@
         </div>
         
         <div class="card">
-          <div class="card-title">Filing Rules</div>
-          <p class="text-muted" style="margin-bottom:16px;">Emails are filed by SPY COMMS reference found in subject line.</p>
-          <div class="field-group">
-            <label>Folder Structure</label>
-            <select id="set-folder-structure">
-              <option value="site">By Site Code (e.g., /12-LLO/emails/)</option>
-              <option value="subject">By Subject Type (e.g., /INVOICE/12-LLO/)</option>
-              <option value="date">By Date (e.g., /2026/03/)</option>
-              <option value="supplier">By Supplier (e.g., /BAY/emails/)</option>
-            </select>
+          <div class="card-title">Filing Rules (SPY COMMS Format)</div>
+          <p class="text-muted" style="margin-bottom:16px;">Emails are filed by SPY COMMS reference: <code>DATE_SUBJECT_SYSTEM_STRUCTURE_SITE_SUPPLIER</code></p>
+          
+          <div class="form-grid">
+            <div class="field-group">
+              <label>Primary Folder</label>
+              <select id="set-primary-folder">
+                <option value="site">Site Code (12-LLO, 66-CHA)</option>
+                <option value="subject">Subject Type (INVOICE, QUOTE)</option>
+                <option value="system">System (ELEC, PLUM, HVAC)</option>
+                <option value="structure">Structure (RESI, COMM)</option>
+                <option value="supplier">Supplier (BAY, ELITE)</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Secondary Folder</label>
+              <select id="set-secondary-folder">
+                <option value="subject">Subject Type (INVOICE, QUOTE)</option>
+                <option value="site">Site Code (12-LLO, 66-CHA)</option>
+                <option value="system">System (ELEC, PLUM, HVAC)</option>
+                <option value="date">Date (2026/03)</option>
+                <option value="none">None</option>
+              </select>
+            </div>
           </div>
+          
+          <div style="margin-top:16px; padding:16px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border);">
+            <div class="text-muted" style="font-size:0.85rem; margin-bottom:8px;">Preview folder structure:</div>
+            <code id="folder-preview" style="color:var(--accent);">/12-LLO/INVOICE/20260318_INVOICE_ELEC_RESI_12-LLO_BAY.eml</code>
+          </div>
+          
           <div style="margin-top:20px;">
             <button class="btn btn-primary" onclick="saveFilingRules()">Save Filing Rules</button>
           </div>
