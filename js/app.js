@@ -1286,6 +1286,259 @@ const emailTitles = {
   settings: 'Settings'
 };
 
+
+// ── Document Upload ────────────────────────────────────────────
+window.selectedFile = null;
+window.uploadedDocuments = JSON.parse(localStorage.getItem('spyco_documents') || '[]');
+
+function openDocumentUpload() {
+  document.getElementById('document-upload-panel').style.display = 'block';
+  document.getElementById('upload-step-1').style.display = 'block';
+  document.getElementById('upload-step-2').style.display = 'none';
+  document.getElementById('selected-file-name').textContent = '';
+  document.getElementById('upload-btn').disabled = true;
+  window.selectedFile = null;
+  
+  // Populate dropdowns from reference data
+  populateDocDropdowns();
+}
+
+function closeDocumentUpload() {
+  document.getElementById('document-upload-panel').style.display = 'none';
+  window.selectedFile = null;
+}
+
+function populateDocDropdowns() {
+  const refs = window.appData?.reference || {};
+  
+  const populateSelect = (id, category) => {
+    const select = document.getElementById(id);
+    const items = refs[category] || [];
+    select.innerHTML = '<option value="">Select...</option>' + 
+      items.map(r => `<option value="${r.code}">${r.code} - ${r.name}</option>`).join('');
+  };
+  
+  populateSelect('doc-subject', 'Subject');
+  populateSelect('doc-system', 'Systems');
+  populateSelect('doc-structure', 'Structure');
+  populateSelect('doc-supplier', 'Suppliers');
+  
+  // Sites from properties
+  const sites = (window.appData?.properties || []).map(p => p.code).filter(Boolean);
+  const siteSelect = document.getElementById('doc-site');
+  siteSelect.innerHTML = '<option value="">Select...</option>' + 
+    sites.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) {
+    window.selectedFile = file;
+    document.getElementById('selected-file-name').textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    document.getElementById('upload-step-2').style.display = 'block';
+    document.getElementById('upload-btn').disabled = false;
+    
+    // Get file extension
+    const ext = file.name.split('.').pop();
+    window.selectedFileExt = ext;
+    
+    updateDocFileName();
+  }
+}
+
+// Drag and drop
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--accent)';
+        dropZone.style.background = 'rgba(233, 69, 96, 0.1)';
+      });
+      
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'transparent';
+      });
+      
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'transparent';
+        
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          document.getElementById('file-input').files = e.dataTransfer.files;
+          handleFileSelect(document.getElementById('file-input'));
+        }
+      });
+    }
+  }, 500);
+});
+
+function updateDocFileName() {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const subject = document.getElementById('doc-subject').value || 'DOC';
+  const system = document.getElementById('doc-system').value || 'GEN';
+  const structure = document.getElementById('doc-structure').value || 'GEN';
+  const site = document.getElementById('doc-site').value || 'SITE';
+  const supplier = document.getElementById('doc-supplier').value || 'SUP';
+  const ext = window.selectedFileExt || 'pdf';
+  
+  const fileName = `${date}_${subject}_${system}_${structure}_${site}_${supplier}.${ext}`;
+  document.getElementById('doc-final-name').value = fileName;
+  
+  // Update folder path based on settings
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  const primary = settings.primaryFolder || 'site';
+  const secondary = settings.secondaryFolder || 'subject';
+  
+  const getValue = (key) => {
+    switch(key) {
+      case 'site': return site;
+      case 'subject': return subject;
+      case 'system': return system;
+      case 'structure': return structure;
+      case 'supplier': return supplier;
+      case 'date': return date.substring(0,4) + '/' + date.substring(4,6);
+      default: return '';
+    }
+  };
+  
+  let folderPath = '/' + getValue(primary);
+  if (secondary && secondary !== 'none') {
+    folderPath += '/' + getValue(secondary);
+  }
+  folderPath += '/';
+  
+  document.getElementById('doc-folder-path').value = folderPath;
+}
+
+function uploadDocumentToDrive() {
+  if (!window.selectedFile) {
+    alert('Please select a file first');
+    return;
+  }
+  
+  const fileName = document.getElementById('doc-final-name').value;
+  const folderPath = document.getElementById('doc-folder-path').value;
+  
+  // Show progress
+  document.getElementById('upload-progress').style.display = 'block';
+  document.getElementById('upload-btn').disabled = true;
+  document.getElementById('upload-status').textContent = 'Preparing upload...';
+  
+  // Create form data
+  const formData = new FormData();
+  formData.append('file', window.selectedFile);
+  formData.append('fileName', fileName);
+  formData.append('folderPath', folderPath);
+  
+  // Simulate progress (actual upload would use XMLHttpRequest for progress)
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += 10;
+    document.getElementById('progress-bar').style.width = progress + '%';
+    if (progress >= 90) clearInterval(progressInterval);
+  }, 200);
+  
+  fetch('/api/documents/upload', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    clearInterval(progressInterval);
+    document.getElementById('progress-bar').style.width = '100%';
+    
+    if (data.success) {
+      document.getElementById('upload-status').textContent = '✓ Upload complete!';
+      
+      // Save to local documents list
+      const doc = {
+        id: Date.now().toString(),
+        fileName: fileName,
+        folderPath: folderPath,
+        uploadDate: new Date().toISOString(),
+        driveId: data.driveId || null,
+        driveUrl: data.driveUrl || null
+      };
+      
+      window.uploadedDocuments.unshift(doc);
+      localStorage.setItem('spyco_documents', JSON.stringify(window.uploadedDocuments));
+      
+      // Refresh list
+      renderDocuments();
+      
+      // Close panel after delay
+      setTimeout(() => {
+        closeDocumentUpload();
+        document.getElementById('upload-progress').style.display = 'none';
+        document.getElementById('progress-bar').style.width = '0%';
+      }, 1500);
+      
+    } else {
+      document.getElementById('upload-status').textContent = '✗ Upload failed: ' + data.message;
+      document.getElementById('upload-btn').disabled = false;
+    }
+  })
+  .catch(err => {
+    clearInterval(progressInterval);
+    document.getElementById('upload-status').textContent = '✗ Error: ' + err.message;
+    document.getElementById('upload-btn').disabled = false;
+  });
+}
+
+function renderDocuments() {
+  const tbody = document.getElementById('documents-tbody');
+  const docs = window.uploadedDocuments || [];
+  
+  if (!docs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No documents uploaded yet.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = docs.map(d => {
+    // Parse SPY COMMS ref from filename
+    const parts = d.fileName.split('_');
+    const site = parts[4] || '—';
+    const type = parts[1] || '—';
+    
+    return `
+      <tr>
+        <td><span class="code">${esc(d.fileName)}</span></td>
+        <td>${d.uploadDate ? new Date(d.uploadDate).toLocaleDateString() : '—'}</td>
+        <td>${esc(site)}</td>
+        <td>${esc(type)}</td>
+        <td class="table-actions">
+          ${d.driveUrl ? `<a href="${d.driveUrl}" target="_blank" class="btn btn-icon btn-ghost" title="Open in Drive">🔗</a>` : ''}
+          <button class="btn btn-icon btn-ghost delete" onclick="deleteDocument('${d.id}')" title="Delete">🗑</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function deleteDocument(id) {
+  if (!confirm('Delete this document record?')) return;
+  
+  window.uploadedDocuments = window.uploadedDocuments.filter(d => d.id !== id);
+  localStorage.setItem('spyco_documents', JSON.stringify(window.uploadedDocuments));
+  renderDocuments();
+}
+
+function refreshDocuments() {
+  // In future, this would fetch from Google Drive
+  renderDocuments();
+  alert('Document list refreshed');
+}
+
+// Load documents on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(renderDocuments, 600);
+});
+
 // ── PWA ───────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

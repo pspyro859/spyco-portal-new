@@ -44,6 +44,71 @@ app.use(session({
 // Serve static files from same directory (root)
 app.use(express.static(__dirname));
 
+// File upload middleware
+const multer = require('multer');
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB limit
+
+// Document upload endpoint
+app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    
+    const { fileName, folderPath } = req.body;
+    const originalPath = req.file.path;
+    
+    // Rename file to SPY COMMS name
+    const newPath = path.join(uploadDir, fileName || req.file.filename);
+    fs.renameSync(originalPath, newPath);
+    
+    // If Google Drive tokens exist in session, upload to Drive
+    let driveId = null;
+    let driveUrl = null;
+    
+    if (req.session && req.session.tokens) {
+      try {
+        const driveService = require('./services/driveService');
+        const result = await driveService.uploadFile(
+          req.session.tokens,
+          newPath,
+          fileName,
+          folderPath
+        );
+        driveId = result.id;
+        driveUrl = result.webViewLink;
+        
+        // Optionally delete local file after Drive upload
+        // fs.unlinkSync(newPath);
+      } catch (driveErr) {
+        console.log('Drive upload failed, keeping local:', driveErr.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'File uploaded successfully',
+      fileName: fileName,
+      folderPath: folderPath,
+      localPath: newPath,
+      driveId: driveId,
+      driveUrl: driveUrl
+    });
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);

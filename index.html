@@ -384,29 +384,113 @@
         <div class="page-header">
           <div>
             <h1>📁 Documents</h1>
-            <p>Files organised with SPY COMMS naming convention</p>
+            <p>Upload and organise files with SPY COMMS naming</p>
+          </div>
+          <button class="btn btn-primary" onclick="openDocumentUpload()">+ Upload Document</button>
+        </div>
+        
+        <!-- Upload Panel -->
+        <div class="card" id="document-upload-panel" style="display:none;">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Upload Document to Google Drive</span>
+            <button class="btn btn-ghost" onclick="closeDocumentUpload()">✕</button>
+          </div>
+          
+          <!-- Step 1: Select File -->
+          <div class="upload-step" id="upload-step-1">
+            <div style="border:2px dashed var(--border); border-radius:12px; padding:40px; text-align:center; margin-bottom:20px;" id="drop-zone">
+              <div style="font-size:48px; margin-bottom:16px;">📄</div>
+              <p style="margin-bottom:16px;">Drag & drop a file here, or</p>
+              <input type="file" id="file-input" style="display:none;" onchange="handleFileSelect(this)" />
+              <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">Choose File</button>
+              <p id="selected-file-name" class="text-muted" style="margin-top:16px;"></p>
+            </div>
+          </div>
+          
+          <!-- Step 2: Name with SPY COMMS -->
+          <div class="upload-step" id="upload-step-2" style="display:none;">
+            <p class="text-muted" style="margin-bottom:16px;">Generate file name using SPY COMMS format:</p>
+            <div class="form-grid">
+              <div class="field-group">
+                <label>Subject</label>
+                <select id="doc-subject" onchange="updateDocFileName()">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>System</label>
+                <select id="doc-system" onchange="updateDocFileName()">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Structure</label>
+                <select id="doc-structure" onchange="updateDocFileName()">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Site</label>
+                <select id="doc-site" onchange="updateDocFileName()">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Supplier</label>
+                <select id="doc-supplier" onchange="updateDocFileName()">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+            </div>
+            
+            <div style="margin-top:20px; padding:16px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+              <label style="display:block; margin-bottom:8px;">Generated File Name:</label>
+              <input type="text" id="doc-final-name" style="width:100%; font-family:var(--mono);" readonly />
+            </div>
+            
+            <div style="margin-top:20px; padding:16px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+              <label style="display:block; margin-bottom:8px;">Upload to Folder:</label>
+              <input type="text" id="doc-folder-path" style="width:100%; font-family:var(--mono);" placeholder="/12-LLO/INVOICE/" />
+            </div>
+          </div>
+          
+          <!-- Step 3: Upload -->
+          <div style="margin-top:20px; display:flex; gap:12px;">
+            <button class="btn btn-primary" onclick="uploadDocumentToDrive()" id="upload-btn" disabled>
+              Upload to Google Drive
+            </button>
+            <button class="btn btn-secondary" onclick="showPage('spycomms',document.querySelector('[data-page=spycomms]'))">
+              Open Full SPY COMMS Builder
+            </button>
+          </div>
+          
+          <div id="upload-progress" style="display:none; margin-top:16px;">
+            <div style="background:var(--bg); border-radius:8px; height:8px; overflow:hidden;">
+              <div id="progress-bar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;"></div>
+            </div>
+            <p id="upload-status" class="text-muted" style="margin-top:8px; text-align:center;">Uploading...</p>
           </div>
         </div>
         
+        <!-- Recent Documents -->
         <div class="card">
-          <div class="card-title">Upload & Name a Document</div>
-          <p class="text-muted mb-16">Use the SPY COMMS builder to generate the correct file name.</p>
-          <button class="btn btn-primary" onclick="showPage('spycomms',document.querySelector('[data-page=spycomms]'))">Go to SPY COMMS Builder →</button>
-        </div>
-        
-        <div class="card">
-          <div class="card-title">Recent Documents</div>
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Recent Documents</span>
+            <button class="btn btn-secondary btn-sm" onclick="refreshDocuments()">↻ Refresh</button>
+          </div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>File Name</th>
-                <th>Date</th>
+                <th>Date Uploaded</th>
                 <th>Site</th>
-                <th>System</th>
-                <th></th>
+                <th>Type</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="documents-tbody"></tbody>
+            <tbody id="documents-tbody">
+              <tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No documents uploaded yet.</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
