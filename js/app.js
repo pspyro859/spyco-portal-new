@@ -320,6 +320,28 @@ function renderInvoices() {
   const data = window.appData.invoices;
   const tbody = document.getElementById('invoices-tbody');
   
+  // Calculate totals
+  let unpaidTotal = 0;
+  let overdueTotal = 0;
+  let paidTotal = 0;
+  
+  data.forEach(i => {
+    const amount = parseFloat(i.amount) || 0;
+    if (i.status === 'Paid') {
+      paidTotal += amount;
+    } else if (i.status === 'Overdue') {
+      overdueTotal += amount;
+      unpaidTotal += amount;
+    } else if (i.status === 'Unpaid') {
+      unpaidTotal += amount;
+    }
+  });
+  
+  // Update summary cards
+  document.getElementById('invoice-unpaid').textContent = '$' + unpaidTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
+  document.getElementById('invoice-overdue').textContent = '$' + overdueTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
+  document.getElementById('invoice-paid').textContent = '$' + paidTotal.toLocaleString('en-AU', {minimumFractionDigits: 2});
+  
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:32px;">No invoices yet.</td></tr>';
     return;

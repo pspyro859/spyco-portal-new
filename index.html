@@ -333,6 +333,22 @@
           <button class="btn btn-primary" onclick="openModal('invoice-modal')">+ Add Invoice</button>
         </div>
         
+        <!-- Invoice Summary -->
+        <div class="income-stats">
+          <div class="income-card" style="border-left: 4px solid #ef4444;">
+            <div class="income-label">Total Unpaid (You Owe)</div>
+            <div class="income-value" id="invoice-unpaid" style="color: #ef4444;">$0.00</div>
+          </div>
+          <div class="income-card" style="border-left: 4px solid #f59e0b;">
+            <div class="income-label">Overdue</div>
+            <div class="income-value" id="invoice-overdue" style="color: #f59e0b;">$0.00</div>
+          </div>
+          <div class="income-card" style="border-left: 4px solid #22c55e;">
+            <div class="income-label">Total Paid</div>
+            <div class="income-value" id="invoice-paid" style="color: #22c55e;">$0.00</div>
+          </div>
+        </div>
+        
         <div class="card">
           <div class="search-wrap">
             <span class="search-icon">🔍</span>
