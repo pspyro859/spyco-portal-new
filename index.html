@@ -99,6 +99,14 @@
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           Reference
         </div>
+        <div class="nav-item" data-page="email" onclick="showPage('email',this)">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Sync
+        </div>
+        <div class="nav-item" data-page="settings" onclick="showPage('settings',this)">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </div>
       </div>
     </nav>
     
@@ -520,6 +528,140 @@
             </thead>
             <tbody id="reference-tbody"></tbody>
           </table>
+        </div>
+      </div>
+      
+      <!-- ======== EMAIL SYNC ======== -->
+      <div id="page-email" class="page">
+        <div class="page-header">
+          <div>
+            <h1>📧 Email Sync</h1>
+            <p>Scan and file emails by SPY COMMS reference</p>
+          </div>
+          <button class="btn btn-primary" onclick="scanEmails()" id="scan-btn">Scan Emails</button>
+        </div>
+        
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Email Status</div>
+            <div id="email-status">
+              <p class="text-muted">Configure email settings first</p>
+            </div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-secondary" onclick="testEmailConnection()">Test Connection</button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title">Scan Statistics</div>
+            <div class="stats-mini">
+              <div><span id="stat-scanned">0</span> Emails Scanned</div>
+              <div><span id="stat-filed">0</span> Filed by SPY COMMS</div>
+              <div><span id="stat-unmatched">0</span> Unmatched</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Recent Filed Emails</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>From</th>
+                <th>Subject</th>
+                <th>SPY COMMS Ref</th>
+                <th>Filed To</th>
+              </tr>
+            </thead>
+            <tbody id="filed-emails-tbody">
+              <tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails filed yet. Click "Scan Emails" to start.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- ======== SETTINGS ======== -->
+      <div id="page-settings" class="page">
+        <div class="page-header">
+          <div>
+            <h1>⚙️ Settings</h1>
+            <p>Configure email and storage settings</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Email Configuration (IMAP)</div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>IMAP Server</label>
+              <input type="text" id="set-imap-server" placeholder="e.g., imap.gmail.com" />
+            </div>
+            <div class="field-group">
+              <label>IMAP Port</label>
+              <input type="number" id="set-imap-port" placeholder="993" value="993" />
+            </div>
+            <div class="field-group">
+              <label>Email Address</label>
+              <input type="email" id="set-email" placeholder="your@email.com" />
+            </div>
+            <div class="field-group">
+              <label>Password / App Password</label>
+              <input type="password" id="set-password" placeholder="••••••••" />
+            </div>
+            <div class="field-group">
+              <label>Use SSL</label>
+              <select id="set-ssl">
+                <option value="true" selected>Yes (Recommended)</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Folder to Scan</label>
+              <input type="text" id="set-folder" placeholder="INBOX" value="INBOX" />
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveEmailSettings()">Save Email Settings</button>
+            <button class="btn btn-secondary" onclick="testEmailConnection()" style="margin-left:12px;">Test Connection</button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Storage Configuration</div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label>Storage Type</label>
+              <select id="set-storage-type" onchange="toggleStorageOptions()">
+                <option value="local">Local (Browser Storage)</option>
+                <option value="drive">Google Drive</option>
+              </select>
+            </div>
+            <div class="field-group" id="drive-folder-group" style="display:none;">
+              <label>Google Drive Folder ID</label>
+              <input type="text" id="set-drive-folder" placeholder="Folder ID from Drive URL" />
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveStorageSettings()">Save Storage Settings</button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Filing Rules</div>
+          <p class="text-muted" style="margin-bottom:16px;">Emails are filed by SPY COMMS reference found in subject line.</p>
+          <div class="field-group">
+            <label>Folder Structure</label>
+            <select id="set-folder-structure">
+              <option value="site">By Site Code (e.g., /12-LLO/emails/)</option>
+              <option value="subject">By Subject Type (e.g., /INVOICE/12-LLO/)</option>
+              <option value="date">By Date (e.g., /2026/03/)</option>
+              <option value="supplier">By Supplier (e.g., /BAY/emails/)</option>
+            </select>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveFilingRules()">Save Filing Rules</button>
+          </div>
         </div>
       </div>
       

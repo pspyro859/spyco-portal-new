@@ -553,9 +553,16 @@ function showPage(pageId, navEl) {
     invoices: 'Invoices',
     documents: 'Documents',
     spycomms: 'SPY COMMS',
-    reference: 'Reference'
+    reference: 'Reference',
+    email: 'Email Sync',
+    settings: 'Settings'
   };
   document.getElementById('header-title').textContent = titles[pageId] || 'Dashboard';
+  
+  // Load settings if going to settings page
+  if (pageId === 'settings' || pageId === 'email') {
+    loadEmailSettings();
+  }
 }
 
 // ── Modal Functions ───────────────────────────────────────────
@@ -872,6 +879,190 @@ function toggleAllCheckboxes(masterCheckbox, tbodyId) {
   const checkboxes = document.querySelectorAll('#' + tbodyId + ' .table-checkbox');
   checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
 }
+
+
+// ── Email Settings ────────────────────────────────────────────
+function loadEmailSettings() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  if (settings.imapServer) document.getElementById('set-imap-server').value = settings.imapServer;
+  if (settings.imapPort) document.getElementById('set-imap-port').value = settings.imapPort;
+  if (settings.email) document.getElementById('set-email').value = settings.email;
+  if (settings.password) document.getElementById('set-password').value = settings.password;
+  if (settings.ssl) document.getElementById('set-ssl').value = settings.ssl;
+  if (settings.folder) document.getElementById('set-folder').value = settings.folder;
+  if (settings.storageType) document.getElementById('set-storage-type').value = settings.storageType;
+  if (settings.driveFolder) document.getElementById('set-drive-folder').value = settings.driveFolder;
+  if (settings.folderStructure) document.getElementById('set-folder-structure').value = settings.folderStructure;
+  toggleStorageOptions();
+  updateEmailStatus();
+}
+
+function saveEmailSettings() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  settings.imapServer = document.getElementById('set-imap-server').value.trim();
+  settings.imapPort = document.getElementById('set-imap-port').value;
+  settings.email = document.getElementById('set-email').value.trim();
+  settings.password = document.getElementById('set-password').value;
+  settings.ssl = document.getElementById('set-ssl').value;
+  settings.folder = document.getElementById('set-folder').value.trim() || 'INBOX';
+  localStorage.setItem('spyco_email_settings', JSON.stringify(settings));
+  alert('Email settings saved!');
+  updateEmailStatus();
+}
+
+function saveStorageSettings() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  settings.storageType = document.getElementById('set-storage-type').value;
+  settings.driveFolder = document.getElementById('set-drive-folder').value.trim();
+  localStorage.setItem('spyco_email_settings', JSON.stringify(settings));
+  alert('Storage settings saved!');
+}
+
+function saveFilingRules() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  settings.folderStructure = document.getElementById('set-folder-structure').value;
+  localStorage.setItem('spyco_email_settings', JSON.stringify(settings));
+  alert('Filing rules saved!');
+}
+
+function toggleStorageOptions() {
+  const type = document.getElementById('set-storage-type').value;
+  document.getElementById('drive-folder-group').style.display = type === 'drive' ? 'block' : 'none';
+}
+
+function updateEmailStatus() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  const statusEl = document.getElementById('email-status');
+  if (settings.email && settings.imapServer) {
+    statusEl.innerHTML = `
+      <div style="color:var(--success);margin-bottom:8px;">✓ Email configured</div>
+      <div><strong>Server:</strong> ${esc(settings.imapServer)}:${settings.imapPort}</div>
+      <div><strong>Account:</strong> ${esc(settings.email)}</div>
+      <div><strong>Folder:</strong> ${esc(settings.folder || 'INBOX')}</div>
+    `;
+  } else {
+    statusEl.innerHTML = '<p class="text-muted">Configure email settings in Settings page</p>';
+  }
+}
+
+function testEmailConnection() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  if (!settings.email || !settings.imapServer) {
+    alert('Please configure email settings first');
+    return;
+  }
+  
+  const btn = event.target;
+  btn.textContent = 'Testing...';
+  btn.disabled = true;
+  
+  fetch('/api/email/test-imap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imapServer: settings.imapServer,
+      imapPort: settings.imapPort,
+      email: settings.email,
+      password: settings.password,
+      ssl: settings.ssl
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('✓ Connection successful!');
+    } else {
+      alert('Connection failed: ' + data.message);
+    }
+  })
+  .catch(err => {
+    alert('Error: ' + err.message);
+  })
+  .finally(() => {
+    btn.textContent = 'Test Connection';
+    btn.disabled = false;
+  });
+}
+
+function scanEmails() {
+  const settings = JSON.parse(localStorage.getItem('spyco_email_settings') || '{}');
+  if (!settings.email || !settings.imapServer) {
+    alert('Please configure email settings first in Settings page');
+    return;
+  }
+  
+  const btn = document.getElementById('scan-btn');
+  btn.textContent = 'Scanning...';
+  btn.disabled = true;
+  
+  fetch('/api/email/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imapServer: settings.imapServer,
+      imapPort: settings.imapPort,
+      email: settings.email,
+      password: settings.password,
+      ssl: settings.ssl,
+      folder: settings.folder || 'INBOX',
+      limit: 100
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      // Update statistics
+      document.getElementById('stat-scanned').textContent = data.scanned;
+      document.getElementById('stat-filed').textContent = data.filed;
+      document.getElementById('stat-unmatched').textContent = data.unmatched;
+      
+      // Update table
+      const tbody = document.getElementById('filed-emails-tbody');
+      if (data.emails && data.emails.length > 0) {
+        tbody.innerHTML = data.emails
+          .filter(e => e.spyCommsRef)
+          .slice(0, 50)
+          .map(e => `
+            <tr>
+              <td>${e.date ? new Date(e.date).toLocaleDateString() : '—'}</td>
+              <td>${esc(e.from)}</td>
+              <td>${esc(e.subject.substring(0, 60))}${e.subject.length > 60 ? '...' : ''}</td>
+              <td><span class="code">${esc(e.spyCommsRef)}</span></td>
+              <td><span class="code">${esc(e.filedTo)}</span></td>
+            </tr>
+          `).join('');
+        
+        if (data.filed === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails with SPY COMMS references found.</td></tr>';
+        }
+      } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No emails found.</td></tr>';
+      }
+      
+      alert(`Scan complete!\n\nScanned: ${data.scanned}\nFiled: ${data.filed}\nUnmatched: ${data.unmatched}`);
+    } else {
+      alert('Scan failed: ' + data.message);
+    }
+  })
+  .catch(err => {
+    alert('Error: ' + err.message);
+  })
+  .finally(() => {
+    btn.textContent = 'Scan Emails';
+    btn.disabled = false;
+  });
+}
+
+// Load settings on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(loadEmailSettings, 500);
+});
+
+// Update navigation titles
+const emailTitles = {
+  email: 'Email Sync',
+  settings: 'Settings'
+};
 
 // ── PWA ───────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {

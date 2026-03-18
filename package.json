@@ -22,7 +22,9 @@
     "express-session": "^1.17.3",
     "google-auth-library": "^9.4.1",
     "googleapis": "^129.0.0",
+    "imap": "^0.8.19",
     "json2csv": "^6.0.0-alpha.2",
+    "mailparser": "^3.9.4",
     "nodemailer": "^6.9.7"
   }
 }
