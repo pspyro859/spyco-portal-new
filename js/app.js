@@ -87,7 +87,7 @@ function showLogin() {
 
 function showApp(user) {
   document.getElementById('login-page').style.display = 'none';
-  document.getElementById('app').style.display = 'grid';
+  document.getElementById('app').style.display = 'block';
   
   // Set user info
   const name = user.name || user.user || 'User';

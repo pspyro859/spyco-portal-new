@@ -146,7 +146,6 @@ body {
    ============================================ */
 #app {
   display: none;
-  grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 100vh;
 }
 
@@ -284,6 +283,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  width: calc(100% - var(--sidebar-w));
 }
 
 /* Header */
@@ -311,12 +312,14 @@ body {
   gap: 16px;
   color: var(--text-muted);
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 /* Page content */
 .page-content {
   flex: 1;
   padding: 24px;
+  width: 100%;
 }
 
 .page {
@@ -330,9 +333,10 @@ body {
 /* Page header */
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 24px;
+  gap: 16px;
 }
 
 .page-header h1 {
@@ -341,6 +345,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  white-space: nowrap;
 }
 
 .page-header p {
@@ -371,9 +376,21 @@ body {
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stat-card {
@@ -729,8 +746,14 @@ body {
    ============================================ */
 .quick-actions {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: center;
+}
+
+.quick-actions .btn {
+  white-space: nowrap;
 }
 
 /* ============================================
