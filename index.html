@@ -811,51 +811,51 @@
         <!-- Import / Export -->
         <div class="card">
           <div class="card-title">📦 Import / Export Data</div>
-          <p class="text-muted" style="margin-bottom:16px;">Bulk import from CSV or export your portal data.</p>
+          <p class="text-muted" style="margin-bottom:16px;">Download a spreadsheet, add your data, then upload it back.</p>
           
-          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-            <div style="flex:1;min-width:200px;">
-              <div style="font-weight:600;margin-bottom:8px;">Export</div>
-              <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                <button class="btn btn-secondary btn-sm" onclick="exportTable('properties')">📥 Properties</button>
-                <button class="btn btn-secondary btn-sm" onclick="exportTable('contacts')">📥 Suppliers</button>
-                <button class="btn btn-secondary btn-sm" onclick="exportTable('projects')">📥 Projects</button>
-                <button class="btn btn-secondary btn-sm" onclick="exportTable('invoices')">📥 Invoices</button>
-                <button class="btn btn-secondary btn-sm" onclick="exportTable('reference_data')">📥 Reference Codes</button>
-                <button class="btn btn-primary btn-sm" onclick="exportAll()">📥 Export All (JSON)</button>
-              </div>
-            </div>
+          <!-- Step 1: Pick what to work with -->
+          <div class="field-group" style="margin-bottom:16px;">
+            <label style="font-weight:600;">What do you want to import/export?</label>
+            <select id="import-table" style="padding:12px;font-size:1rem;" onchange="updateImportHelp()">
+              <option value="properties">🏠 Properties / Sites</option>
+              <option value="contacts">👷 Suppliers / Contacts</option>
+              <option value="projects">📋 Projects</option>
+              <option value="invoices">💰 Invoices</option>
+              <option value="reference_data">🏷️ Reference Codes (SPY COMMS)</option>
+            </select>
           </div>
           
+          <!-- Step 2: Export / Download -->
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+            <button class="btn btn-secondary" onclick="downloadTemplate()" style="padding:12px 20px;">
+              📄 Download Empty Template
+            </button>
+            <button class="btn btn-primary" onclick="downloadCurrentData()" style="padding:12px 20px;">
+              📥 Download Current Data
+            </button>
+          </div>
+          <p class="text-muted" style="font-size:0.85rem;margin-bottom:20px;">
+            Open the downloaded CSV in Excel or Google Sheets. Add your rows, save as CSV, then upload below.
+          </p>
+          
+          <!-- Step 3: Upload -->
           <div style="border-top:1px solid var(--border);padding-top:16px;">
-            <div style="font-weight:600;margin-bottom:8px;">Import from CSV</div>
-            <div class="form-grid" style="margin-bottom:12px;">
-              <div class="field-group">
-                <label>Table to import into</label>
-                <select id="import-table">
-                  <option value="properties">Properties</option>
-                  <option value="contacts">Suppliers / Contacts</option>
-                  <option value="projects">Projects</option>
-                  <option value="invoices">Invoices</option>
-                  <option value="reference_data">Reference Codes</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label>Import mode</label>
-                <select id="import-mode">
-                  <option value="append">Add to existing data</option>
-                  <option value="replace">Replace all (clear & import)</option>
-                </select>
-              </div>
-            </div>
+            <div style="font-weight:600;margin-bottom:8px;">Upload your spreadsheet</div>
             <div class="field-group" style="margin-bottom:12px;">
-              <label>Choose CSV file</label>
-              <input type="file" id="import-file" accept=".csv,.json" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
-              <small class="text-muted">CSV must have column headers in the first row. JSON must match the export format.</small>
+              <input type="file" id="import-file" accept=".csv" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;font-size:1rem;" />
             </div>
-            <div style="display:flex;gap:12px;align-items:center;">
-              <button class="btn btn-primary" onclick="doImport()">⬆️ Import</button>
-              <span id="import-status" style="font-size:0.85rem;"></span>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+              <button class="btn btn-primary" onclick="doImport('append')" style="padding:12px 20px;">
+                ➕ Add to existing data
+              </button>
+              <button class="btn btn-secondary" onclick="doImport('replace')" style="padding:12px 20px;">
+                🔄 Replace all data
+              </button>
+            </div>
+            <div id="import-status" style="margin-top:12px;font-size:0.95rem;"></div>
+            
+            <!-- Column guide -->
+            <div id="import-help" style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border);font-size:0.85rem;">
             </div>
           </div>
         </div>

@@ -898,6 +898,7 @@ function showPage(pageId, navEl) {
   if (pageId === 'settings' || pageId === 'email') {
     loadEmailSettings();
     loadUsers();
+    updateImportHelp();
   }
 }
 
@@ -1983,41 +1984,109 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Import / Export ───────────────────────────────────────────
-function exportTable(table) {
-  window.location.href = '/api/data/export-csv/' + table;
+const TABLE_COLUMNS = {
+  properties:     { headers: ['code','address','entity','status','tenant','rent','lease_start','lease_end','notes'],
+                    labels:  ['Site Code','Address','Entity','Status','Tenant','Weekly Rent','Lease Start','Lease End','Notes'],
+                    example: ['12-LLO','12 Lloyd Road Lambton','SPY','Tenanted','John Smith','650','2026-01-01','2026-12-31','Example note'] },
+  contacts:       { headers: ['code','name','category','phone','email','person','notes'],
+                    labels:  ['Code','Business Name','Category','Phone','Email','Contact Person','Notes'],
+                    example: ['BPP','Bay Pumps & Plumbing','Trade','0412 345 678','info@baypumps.com.au','Mike','Nelson Bay specialists'] },
+  projects:       { headers: ['name','site','entity','status','type','start_date','due_date','budget','notes'],
+                    labels:  ['Project Name','Site Code','Entity','Status','Type','Start Date','Due Date','Budget','Notes'],
+                    example: ['Kitchen Reno','66-CHA','SPY','In Progress','Renovation','2026-01-15','2026-06-30','15000',''] },
+  invoices:       { headers: ['date','supplier','site','entity','amount','status','description','comms_ref','notes'],
+                    labels:  ['Date','Supplier','Site Code','Entity','Amount','Status','Description','SPY COMMS Ref','Notes'],
+                    example: ['2026-03-21','Bay Pumps & Plumbing','12-LLO','SPY','4500','Unpaid','Bore pump install','20260321_INVOICE_3-SUP_SPY_12-LLO_BPP',''] },
+  reference_data: { headers: ['category','code','name','description'],
+                    labels:  ['Category','Code','Name','Description'],
+                    example: ['Subject','INVOICE','Payable','Bills: Trade invoices, utility bills, or progress claims'] }
+};
+
+function updateImportHelp() {
+  const table = document.getElementById('import-table').value;
+  const info = TABLE_COLUMNS[table];
+  const helpEl = document.getElementById('import-help');
+  helpEl.innerHTML = '<strong>Spreadsheet columns:</strong><br>' +
+    info.labels.map((l, i) => `<span style="display:inline-block;margin:2px 4px;padding:2px 8px;background:var(--bg-card);border-radius:4px;border:1px solid var(--border);">${l}</span>`).join('') +
+    (table === 'reference_data' ? '<br><br><strong>Categories:</strong> Subject, Systems, Structure, Financial, Quarters' : '');
 }
 
-function exportAll() {
-  fetch('/api/data/export-all', { credentials: 'include' })
-    .then(r => r.json())
-    .then(data => {
-      if (!data.success) { alert(data.message || 'Export failed'); return; }
-      const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const d = new Date();
-      const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-      a.href = url;
-      a.download = `spyco-portal-backup-${dateStr}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(err => alert('Export error: ' + err.message));
+function downloadCSV(filename, headers, labels, rows) {
+  const csvRows = [labels.join(',')];
+  rows.forEach(row => {
+    csvRows.push(headers.map(h => {
+      let val = row[h] == null ? '' : String(row[h]);
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        val = '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    }).join(','));
+  });
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadTemplate() {
+  const table = document.getElementById('import-table').value;
+  const info = TABLE_COLUMNS[table];
+  // Template with headers + one example row
+  downloadCSV(`spyco-${table}-template.csv`, info.headers, info.labels, [
+    Object.fromEntries(info.headers.map((h, i) => [h, info.example[i]]))
+  ]);
+}
+
+async function downloadCurrentData() {
+  const table = document.getElementById('import-table').value;
+  const info = TABLE_COLUMNS[table];
+  const statusEl = document.getElementById('import-status');
+  
+  try {
+    let endpoint = '/api/data/' + (table === 'reference_data' ? 'reference' : table.replace('_data', ''));
+    const resp = await fetch(endpoint, { credentials: 'include' });
+    const result = await resp.json();
+    
+    let rows = [];
+    if (table === 'reference_data') {
+      // Flatten grouped reference data
+      if (result.data) {
+        Object.values(result.data).forEach(arr => { rows = rows.concat(arr); });
+      }
+    } else {
+      rows = result.data || [];
+    }
+    
+    if (!rows.length) {
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = 'No data to export yet';
+      return;
+    }
+    
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    downloadCSV(`spyco-${table}-${dateStr}.csv`, info.headers, info.labels, rows);
+    statusEl.style.color = 'var(--success, #22c55e)';
+    statusEl.textContent = `✓ Downloaded ${rows.length} rows`;
+  } catch (e) {
+    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = 'Download failed: ' + e.message;
+  }
 }
 
 function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim());
   if (lines.length < 2) return [];
-  
-  // Parse header
   const headers = parseCSVLine(lines[0]);
-  
-  // Parse rows
   return lines.slice(1).map(line => {
     const values = parseCSVLine(line);
     const obj = {};
     headers.forEach((h, i) => {
-      obj[h.trim().toLowerCase().replace(/\s+/g, '_')] = (values[i] || '').trim();
+      // Map label headers back to field names
+      const key = h.trim().toLowerCase().replace(/\s+/g, '_');
+      obj[key] = (values[i] || '').trim();
     });
     return obj;
   });
@@ -2030,15 +2099,10 @@ function parseCSVLine(line) {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
     } else if (ch === ',' && !inQuotes) {
-      result.push(current);
-      current = '';
+      result.push(current); current = '';
     } else {
       current += ch;
     }
@@ -2047,53 +2111,53 @@ function parseCSVLine(line) {
   return result;
 }
 
-async function doImport() {
+// Map CSV label headers to DB field names
+function mapCSVRow(row, table) {
+  const info = TABLE_COLUMNS[table];
+  const mapped = {};
+  info.labels.forEach((label, i) => {
+    const labelKey = label.toLowerCase().replace(/\s+/g, '_');
+    const dbKey = info.headers[i];
+    // Try exact DB key first, then label key
+    if (row[dbKey] !== undefined) {
+      mapped[dbKey] = row[dbKey];
+    } else if (row[labelKey] !== undefined) {
+      mapped[dbKey] = row[labelKey];
+    } else {
+      // Try partial match
+      const found = Object.keys(row).find(k => k.includes(labelKey) || labelKey.includes(k));
+      mapped[dbKey] = found ? row[found] : '';
+    }
+  });
+  return mapped;
+}
+
+async function doImport(mode) {
   const table = document.getElementById('import-table').value;
-  const mode = document.getElementById('import-mode').value;
   const fileInput = document.getElementById('import-file');
   const statusEl = document.getElementById('import-status');
   
   if (!fileInput.files[0]) {
     statusEl.style.color = 'var(--accent)';
-    statusEl.textContent = 'Please select a file';
+    statusEl.textContent = '⚠️ Please choose a CSV file first';
     return;
   }
   
-  const file = fileInput.files[0];
-  const text = await file.text();
-  let rows;
-  
-  if (file.name.endsWith('.json')) {
-    try {
-      const json = JSON.parse(text);
-      // Handle full backup format or simple array
-      if (json.data && json.data[table]) {
-        rows = json.data[table];
-      } else if (Array.isArray(json)) {
-        rows = json;
-      } else {
-        statusEl.style.color = 'var(--accent)';
-        statusEl.textContent = 'JSON format not recognized. Use export format or a plain array.';
-        return;
-      }
-    } catch (e) {
-      statusEl.style.color = 'var(--accent)';
-      statusEl.textContent = 'Invalid JSON file';
-      return;
-    }
-  } else {
-    rows = parseCSV(text);
+  if (mode === 'replace' && !confirm('This will DELETE all existing data and replace it. Are you sure?')) {
+    return;
   }
   
-  if (!rows.length) {
+  const text = await fileInput.files[0].text();
+  const rawRows = parseCSV(text);
+  
+  if (!rawRows.length) {
     statusEl.style.color = 'var(--accent)';
-    statusEl.textContent = 'No rows found in file';
+    statusEl.textContent = '⚠️ No data rows found in file';
     return;
   }
   
-  if (mode === 'replace' && !confirm(`This will DELETE all existing ${table} data and replace with ${rows.length} rows. Continue?`)) {
-    return;
-  }
+  // Map headers
+  const rows = rawRows.map(r => mapCSVRow(r, table));
   
   statusEl.style.color = 'var(--text-muted)';
   statusEl.textContent = `Importing ${rows.length} rows...`;
@@ -2109,17 +2173,16 @@ async function doImport() {
     
     if (data.success) {
       statusEl.style.color = 'var(--success, #22c55e)';
-      statusEl.textContent = `✓ Imported ${data.imported} of ${data.total} rows`;
+      statusEl.textContent = `✅ Done! Imported ${data.imported} of ${data.total} rows`;
       fileInput.value = '';
-      // Reload data
       loadAllData();
     } else {
       statusEl.style.color = 'var(--accent)';
-      statusEl.textContent = data.message || 'Import failed';
+      statusEl.textContent = '❌ ' + (data.message || 'Import failed');
     }
   } catch (e) {
     statusEl.style.color = 'var(--accent)';
-    statusEl.textContent = 'Error: ' + e.message;
+    statusEl.textContent = '❌ Error: ' + e.message;
   }
 }
 
