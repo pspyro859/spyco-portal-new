@@ -24,25 +24,70 @@
     <p class="login-subtitle">Sign in to access the Spyco Portal</p>
     <div class="login-error" id="login-error"></div>
     
-    <!-- Simple Login Form -->
+    <!-- Login Form -->
     <div class="field-group" style="margin-bottom:12px;">
-      <label>Username</label>
-      <input type="text" id="login-user" placeholder="Enter username" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
+      <label>Email</label>
+      <input type="email" id="login-user" placeholder="you@spyco.com.au" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
     </div>
     <div class="field-group" style="margin-bottom:16px;">
       <label>Password</label>
       <input type="password" id="login-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doSimpleLogin()" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
     </div>
-    <button class="login-btn" onclick="doSimpleLogin()" style="background:var(--accent);color:#fff;width:100%;margin-bottom:16px;">
+    <button class="login-btn" onclick="doSimpleLogin()" style="background:var(--accent);color:#fff;width:100%;margin-bottom:12px;">
       Sign In
     </button>
+    <div style="text-align:center;margin-top:4px;">
+      <a href="#" onclick="showForgotPassword();return false;" style="color:var(--accent);font-size:0.9rem;text-decoration:underline;">Forgot your password?</a>
+    </div>
     
-    <div style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:16px;">— or —</div>
-    
-    <button class="login-btn google-btn" onclick="doGoogleLogin()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Sign in with Google
-    </button>
+    <!-- Forgot Password Form (hidden by default) -->
+    <div id="forgot-password-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Enter your email to receive a password reset link</p>
+      <div class="field-group" style="margin-bottom:12px;">
+        <input type="email" id="reset-email" placeholder="you@spyco.com.au" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
+      </div>
+      <button class="login-btn" onclick="sendResetEmail()" style="background:var(--accent);color:#fff;width:100%;margin-bottom:8px;">
+        Send Reset Link
+      </button>
+      <div id="reset-message" style="text-align:center;font-size:0.85rem;margin-top:8px;"></div>
+      <div style="text-align:center;margin-top:8px;">
+        <a href="#" onclick="hideForgotPassword();return false;" style="color:var(--text-muted);font-size:0.85rem;text-decoration:none;">← Back to login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RESET PASSWORD PAGE ============ -->
+<div id="reset-password-page" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="https://www.spyco.com.au/img/spyco_logo_full.png" alt="Spyco" style="height:36px;" 
+           onerror="this.outerHTML='<div style=font-size:1.5rem;font-weight:800;>SPY<span style=color:#e94560>CO</span></div>'" />
+    </div>
+    <h2 class="login-title">Reset Password</h2>
+    <p class="login-subtitle" id="reset-subtitle">Enter your new password</p>
+    <div id="reset-error" class="login-error"></div>
+    <div id="reset-form-fields">
+      <div class="field-group" style="margin-bottom:12px;">
+        <label>New Password</label>
+        <input type="password" id="new-password" placeholder="Min 6 characters" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
+      </div>
+      <div class="field-group" style="margin-bottom:16px;">
+        <label>Confirm Password</label>
+        <input type="password" id="confirm-password" placeholder="Confirm password" onkeydown="if(event.key==='Enter')doResetPassword()" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;" />
+      </div>
+      <button class="login-btn" onclick="doResetPassword()" style="background:var(--accent);color:#fff;width:100%;margin-bottom:12px;">
+        Reset Password
+      </button>
+    </div>
+    <div id="reset-success" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:2rem;margin-bottom:12px;">✅</div>
+      <p style="color:var(--success, #22c55e);font-weight:600;">Password updated!</p>
+      <a href="/" style="color:var(--accent);text-decoration:none;font-size:0.9rem;">← Back to login</a>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <a href="/" style="color:var(--text-muted);font-size:0.85rem;text-decoration:none;">← Back to login</a>
+    </div>
   </div>
 </div>
 
@@ -759,8 +804,30 @@
         <div class="page-header">
           <div>
             <h1>⚙️ Settings</h1>
-            <p>Configure email and storage settings</p>
+            <p>Configure users, email and storage settings</p>
           </div>
+        </div>
+        
+        <!-- User Management (Admin Only) -->
+        <div class="card" id="user-management-card">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>👥 User Management</span>
+            <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button>
+          </div>
+          <table class="data-table" style="margin-top:16px;">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="5" class="text-center text-muted" style="padding:24px;">Loading users...</td></tr>
+            </tbody>
+          </table>
         </div>
         
         <div class="card">
@@ -1024,6 +1091,33 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ref-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveRefCode()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title" id="user-modal-title">Add User</div>
+      <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field-group"><label>Name *</label><input type="text" id="u-name" placeholder="Full name" /></div>
+        <div class="field-group"><label>Email *</label><input type="email" id="u-email" placeholder="user@spyco.com.au" /></div>
+        <div class="field-group" id="u-password-group"><label>Password *</label><input type="password" id="u-password" placeholder="Min 6 characters" /></div>
+        <div class="field-group"><label>Role</label>
+          <select id="u-role">
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Save User</button>
     </div>
   </div>
 </div>

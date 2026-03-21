@@ -1,16 +1,23 @@
 /**
- * Google Drive Routes
- * File management with Google Drive
+ * File Management Routes
+ * Local file storage (replaced Google Drive)
  */
 
 const express = require('express');
 const router = express.Router();
-const driveService = require('../services/driveService');
-const sheetsDB = require('../services/sheetsDB');
+const fs = require('fs');
+const path = require('path');
 
-// Middleware to check authentication
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// Ensure uploads dir exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Auth middleware
 const requireAuth = (req, res, next) => {
-  if (!req.session || !req.session.user || !req.session.tokens) {
+  if (!req.session || !req.session.user) {
     return res.status(401).json({ success: false, message: 'Not authenticated' });
   }
   next();
@@ -19,18 +26,25 @@ const requireAuth = (req, res, next) => {
 router.use(requireAuth);
 
 /**
- * Helper to get tokens from session
- */
-const getTokens = (req) => req.session.tokens;
-
-/**
  * GET /api/drive/folders
- * Get folder structure
+ * List folder structure in uploads directory
  */
 router.get('/folders', async (req, res) => {
   try {
-    const structure = await driveService.getFolderStructure(getTokens(req));
-    res.json({ success: true, data: structure });
+    const subfolders = [];
+    const items = fs.readdirSync(UPLOADS_DIR, { withFileTypes: true });
+    for (const item of items) {
+      if (item.isDirectory()) {
+        subfolders.push({ id: item.name, name: item.name });
+      }
+    }
+    res.json({
+      success: true,
+      data: {
+        root: { id: 'uploads', name: 'Uploads' },
+        subfolders
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -38,88 +52,33 @@ router.get('/folders', async (req, res) => {
 
 /**
  * GET /api/drive/files
- * List files in a folder
+ * List files in uploads or a subfolder
  */
 router.get('/files', async (req, res) => {
   try {
-    const { folderId, pageSize } = req.query;
-    const files = await driveService.listFiles(
-      getTokens(req),
-      folderId || null,
-      parseInt(pageSize) || 50
-    );
-    res.json({ success: true, data: files });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+    const { folderId } = req.query;
+    const dir = folderId ? path.join(UPLOADS_DIR, folderId) : UPLOADS_DIR;
 
-/**
- * GET /api/drive/files/:id
- * Get file details
- */
-router.get('/files/:id', async (req, res) => {
-  try {
-    const file = await driveService.getFile(getTokens(req), req.params.id);
-    res.json({ success: true, data: file });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-/**
- * POST /api/drive/files
- * Upload a file (JSON content)
- */
-router.post('/files', async (req, res) => {
-  try {
-    const { fileName, content, folderId, mimeType } = req.body;
-    
-    if (!fileName || !content) {
-      return res.status(400).json({
-        success: false,
-        message: 'fileName and content are required'
-      });
+    if (!fs.existsSync(dir)) {
+      return res.json({ success: true, data: [] });
     }
 
-    const file = await driveService.uploadFile(
-      getTokens(req),
-      fileName,
-      mimeType || 'text/plain',
-      content,
-      folderId
-    );
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    const files = items
+      .filter(i => i.isFile())
+      .map(i => {
+        const filePath = path.join(dir, i.name);
+        const stats = fs.statSync(filePath);
+        return {
+          id: i.name,
+          name: i.name,
+          mimeType: 'application/octet-stream',
+          modifiedTime: stats.mtime.toISOString(),
+          size: stats.size.toString()
+        };
+      });
 
-    // Log activity
-    await sheetsDB.logActivity(
-      `File uploaded — ${fileName}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
-    );
-
-    res.json({ success: true, data: file });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-/**
- * DELETE /api/drive/files/:id
- * Delete a file
- */
-router.delete('/files/:id', async (req, res) => {
-  try {
-    await driveService.deleteFile(getTokens(req), req.params.id);
-    
-    await sheetsDB.logActivity(
-      'File deleted from Drive',
-      '#e94560',
-      req.session.user.dbId,
-      getTokens(req)
-    );
-
-    res.json({ success: true });
+    res.json({ success: true, data: files });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -127,26 +86,36 @@ router.delete('/files/:id', async (req, res) => {
 
 /**
  * GET /api/drive/search
- * Search files
+ * Search files by name
  */
 router.get('/search', async (req, res) => {
   try {
-    const { q, pageSize } = req.query;
-    
+    const { q } = req.query;
     if (!q) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required'
-      });
+      return res.status(400).json({ success: false, message: 'Search query required' });
     }
 
-    const files = await driveService.searchFiles(
-      getTokens(req),
-      q,
-      parseInt(pageSize) || 20
-    );
-    
-    res.json({ success: true, data: files });
+    const results = [];
+    const searchDir = (dir) => {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          searchDir(fullPath);
+        } else if (item.name.toLowerCase().includes(q.toLowerCase())) {
+          const stats = fs.statSync(fullPath);
+          results.push({
+            id: item.name,
+            name: item.name,
+            modifiedTime: stats.mtime.toISOString(),
+            size: stats.size.toString()
+          });
+        }
+      }
+    };
+
+    searchDir(UPLOADS_DIR);
+    res.json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -8,7 +8,7 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
-const sheetsDB = require('../services/sheetsDB');
+const { logActivity } = require('../services/db');
 
 // Create SMTP transporter
 const createTransporter = () => {
@@ -30,6 +30,8 @@ const requireAuth = (req, res, next) => {
   }
   next();
 };
+
+const userId = (req) => req.session.user ? req.session.user.id : null;
 
 router.use(requireAuth);
 
@@ -382,14 +384,7 @@ router.post('/send', async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     // Log activity
-    if (req.session.tokens) {
-      await sheetsDB.logActivity(
-        `Email sent to ${to} — ${subject.substring(0, 40)}`,
-        '#22c55e',
-        req.session.user.dbId,
-        req.session.tokens
-      );
-    }
+    await logActivity(`Email sent to ${to} — ${subject.substring(0, 40)}`, '#22c55e', userId(req));
 
     res.json({ success: true, message: 'Email sent successfully' });
   } catch (error) {

@@ -1,6 +1,6 @@
 /**
  * SPYCO GROUP PORTAL - Node.js Backend
- * Google Drive as Database
+ * MySQL Database + Local File Storage
  */
 
 require('dotenv').config();
@@ -18,7 +18,7 @@ const driveRoutes = require('./routes/drive');
 const exportRoutes = require('./routes/export');
 
 const app = express();
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 3017;
 
 // Middleware
 app.use(cors({
@@ -29,15 +29,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Trust proxy (behind Apache)
+app.set('trust proxy', 1);
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'spyco-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   }
 }));
 
@@ -62,47 +66,41 @@ app.post('/api/documents/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    
+
     const { fileName, folderPath } = req.body;
     const originalPath = req.file.path;
-    
-    // Rename file to SPY COMMS name
-    const newPath = path.join(uploadDir, fileName || req.file.filename);
-    fs.renameSync(originalPath, newPath);
-    
-    // If Google Drive tokens exist in session, upload to Drive
-    let driveId = null;
-    let driveUrl = null;
-    
-    if (req.session && req.session.tokens) {
-      try {
-        const driveService = require('./services/driveService');
-        const result = await driveService.uploadFile(
-          req.session.tokens,
-          newPath,
-          fileName,
-          folderPath
-        );
-        driveId = result.id;
-        driveUrl = result.webViewLink;
-        
-        // Optionally delete local file after Drive upload
-        // fs.unlinkSync(newPath);
-      } catch (driveErr) {
-        console.log('Drive upload failed, keeping local:', driveErr.message);
-      }
+
+    // Create subfolder if specified
+    let targetDir = uploadDir;
+    if (folderPath) {
+      targetDir = path.join(uploadDir, folderPath);
+      if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
     }
-    
+
+    // Rename file to SPY COMMS name
+    const finalName = fileName || req.file.filename;
+    const newPath = path.join(targetDir, finalName);
+    fs.renameSync(originalPath, newPath);
+
+    // Save to DB
+    const { pool } = require('./services/db');
+    try {
+      await pool.execute(
+        'INSERT INTO documents (name, file_name, folder_path, file_path) VALUES (?, ?, ?, ?)',
+        [finalName, finalName, folderPath || '/', newPath]
+      );
+    } catch (dbErr) {
+      console.log('DB log failed:', dbErr.message);
+    }
+
     res.json({
       success: true,
       message: 'File uploaded successfully',
-      fileName: fileName,
+      fileName: finalName,
       folderPath: folderPath,
-      localPath: newPath,
-      driveId: driveId,
-      driveUrl: driveUrl
+      localPath: newPath
     });
-    
+
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ success: false, message: error.message });

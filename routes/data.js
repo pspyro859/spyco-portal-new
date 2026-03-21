@@ -1,27 +1,23 @@
 /**
  * Data Routes
- * CRUD operations using Google Sheets as database
+ * CRUD operations using MySQL
  */
 
 const express = require('express');
 const router = express.Router();
-const sheetsDB = require('../services/sheetsDB');
+const { pool, logActivity } = require('../services/db');
 
-// Middleware to check authentication
+// Auth middleware
 const requireAuth = (req, res, next) => {
-  if (!req.session || !req.session.user || !req.session.tokens) {
+  if (!req.session || !req.session.user) {
     return res.status(401).json({ success: false, message: 'Not authenticated' });
   }
   next();
 };
 
-// Apply auth middleware to all routes
 router.use(requireAuth);
 
-/**
- * Helper to get tokens from session
- */
-const getTokens = (req) => req.session.tokens;
+const userId = (req) => req.session.user.id;
 
 // ═══════════════════════════════════════════════════════════════
 // PROPERTIES
@@ -29,8 +25,8 @@ const getTokens = (req) => req.session.tokens;
 
 router.get('/properties', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Properties', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT * FROM properties ORDER BY code');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -38,20 +34,14 @@ router.get('/properties', async (req, res) => {
 
 router.post('/properties', async (req, res) => {
   try {
-    const data = {
-      id: sheetsDB.generateId(),
-      ...req.body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await sheetsDB.add('Properties', data, getTokens(req));
-    await sheetsDB.logActivity(
-      `Property added — ${data.address}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
+    const { code, address, entity, status, tenant, rent, leaseStart, leaseEnd, notes } = req.body;
+    const [result] = await pool.execute(
+      'INSERT INTO properties (code, address, entity, status, tenant, rent, lease_start, lease_end, notes) VALUES (?,?,?,?,?,?,?,?,?)',
+      [code, address, entity, status || 'Vacant', tenant || null, rent || null, leaseStart || null, leaseEnd || null, notes || null]
     );
-    res.json({ success: true, data });
+    await logActivity(`Property added — ${address}`, '#22c55e', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM properties WHERE id = ?', [result.insertId]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -59,14 +49,14 @@ router.post('/properties', async (req, res) => {
 
 router.put('/properties/:id', async (req, res) => {
   try {
-    const data = await sheetsDB.update('Properties', req.params.id, req.body, getTokens(req));
-    await sheetsDB.logActivity(
-      `Property updated — ${data.address}`,
-      '#f5a623',
-      req.session.user.dbId,
-      getTokens(req)
+    const { code, address, entity, status, tenant, rent, leaseStart, leaseEnd, notes } = req.body;
+    await pool.execute(
+      'UPDATE properties SET code=?, address=?, entity=?, status=?, tenant=?, rent=?, lease_start=?, lease_end=?, notes=? WHERE id=?',
+      [code, address, entity, status, tenant || null, rent || null, leaseStart || null, leaseEnd || null, notes || null, req.params.id]
     );
-    res.json({ success: true, data });
+    await logActivity(`Property updated — ${address}`, '#f5a623', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM properties WHERE id = ?', [req.params.id]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -74,13 +64,8 @@ router.put('/properties/:id', async (req, res) => {
 
 router.delete('/properties/:id', async (req, res) => {
   try {
-    await sheetsDB.delete('Properties', req.params.id, getTokens(req));
-    await sheetsDB.logActivity(
-      'Property deleted',
-      '#e94560',
-      req.session.user.dbId,
-      getTokens(req)
-    );
+    await pool.execute('DELETE FROM properties WHERE id = ?', [req.params.id]);
+    await logActivity('Property deleted', '#e94560', userId(req));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -93,8 +78,8 @@ router.delete('/properties/:id', async (req, res) => {
 
 router.get('/contacts', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Contacts', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT * FROM contacts ORDER BY code');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -102,20 +87,14 @@ router.get('/contacts', async (req, res) => {
 
 router.post('/contacts', async (req, res) => {
   try {
-    const data = {
-      id: sheetsDB.generateId(),
-      ...req.body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await sheetsDB.add('Contacts', data, getTokens(req));
-    await sheetsDB.logActivity(
-      `Contact added — ${data.name}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
+    const { code, name, category, phone, email, person, notes } = req.body;
+    const [result] = await pool.execute(
+      'INSERT INTO contacts (code, name, category, phone, email, person, notes) VALUES (?,?,?,?,?,?,?)',
+      [code, name, category || null, phone || null, email || null, person || null, notes || null]
     );
-    res.json({ success: true, data });
+    await logActivity(`Contact added — ${name}`, '#22c55e', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM contacts WHERE id = ?', [result.insertId]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -123,14 +102,14 @@ router.post('/contacts', async (req, res) => {
 
 router.put('/contacts/:id', async (req, res) => {
   try {
-    const data = await sheetsDB.update('Contacts', req.params.id, req.body, getTokens(req));
-    await sheetsDB.logActivity(
-      `Contact updated — ${data.name}`,
-      '#f5a623',
-      req.session.user.dbId,
-      getTokens(req)
+    const { code, name, category, phone, email, person, notes } = req.body;
+    await pool.execute(
+      'UPDATE contacts SET code=?, name=?, category=?, phone=?, email=?, person=?, notes=? WHERE id=?',
+      [code, name, category || null, phone || null, email || null, person || null, notes || null, req.params.id]
     );
-    res.json({ success: true, data });
+    await logActivity(`Contact updated — ${name}`, '#f5a623', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM contacts WHERE id = ?', [req.params.id]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -138,13 +117,8 @@ router.put('/contacts/:id', async (req, res) => {
 
 router.delete('/contacts/:id', async (req, res) => {
   try {
-    await sheetsDB.delete('Contacts', req.params.id, getTokens(req));
-    await sheetsDB.logActivity(
-      'Contact deleted',
-      '#e94560',
-      req.session.user.dbId,
-      getTokens(req)
-    );
+    await pool.execute('DELETE FROM contacts WHERE id = ?', [req.params.id]);
+    await logActivity('Contact deleted', '#e94560', userId(req));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -157,8 +131,8 @@ router.delete('/contacts/:id', async (req, res) => {
 
 router.get('/projects', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Projects', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT * FROM projects ORDER BY created_at DESC');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -166,20 +140,14 @@ router.get('/projects', async (req, res) => {
 
 router.post('/projects', async (req, res) => {
   try {
-    const data = {
-      id: sheetsDB.generateId(),
-      ...req.body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await sheetsDB.add('Projects', data, getTokens(req));
-    await sheetsDB.logActivity(
-      `Project added — ${data.name}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
+    const { name, site, entity, status, type, start, due, budget, notes } = req.body;
+    const [result] = await pool.execute(
+      'INSERT INTO projects (name, site, entity, status, type, start_date, due_date, budget, notes) VALUES (?,?,?,?,?,?,?,?,?)',
+      [name, site || null, entity || null, status || 'Planning', type || null, start || null, due || null, budget || null, notes || null]
     );
-    res.json({ success: true, data });
+    await logActivity(`Project added — ${name}`, '#22c55e', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM projects WHERE id = ?', [result.insertId]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -187,14 +155,14 @@ router.post('/projects', async (req, res) => {
 
 router.put('/projects/:id', async (req, res) => {
   try {
-    const data = await sheetsDB.update('Projects', req.params.id, req.body, getTokens(req));
-    await sheetsDB.logActivity(
-      `Project updated — ${data.name}`,
-      '#f5a623',
-      req.session.user.dbId,
-      getTokens(req)
+    const { name, site, entity, status, type, start, due, budget, notes } = req.body;
+    await pool.execute(
+      'UPDATE projects SET name=?, site=?, entity=?, status=?, type=?, start_date=?, due_date=?, budget=?, notes=? WHERE id=?',
+      [name, site || null, entity || null, status, type || null, start || null, due || null, budget || null, notes || null, req.params.id]
     );
-    res.json({ success: true, data });
+    await logActivity(`Project updated — ${name}`, '#f5a623', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM projects WHERE id = ?', [req.params.id]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -202,13 +170,8 @@ router.put('/projects/:id', async (req, res) => {
 
 router.delete('/projects/:id', async (req, res) => {
   try {
-    await sheetsDB.delete('Projects', req.params.id, getTokens(req));
-    await sheetsDB.logActivity(
-      'Project deleted',
-      '#e94560',
-      req.session.user.dbId,
-      getTokens(req)
-    );
+    await pool.execute('DELETE FROM projects WHERE id = ?', [req.params.id]);
+    await logActivity('Project deleted', '#e94560', userId(req));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -221,8 +184,8 @@ router.delete('/projects/:id', async (req, res) => {
 
 router.get('/invoices', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Invoices', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT * FROM invoices ORDER BY date DESC');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -230,20 +193,17 @@ router.get('/invoices', async (req, res) => {
 
 router.post('/invoices', async (req, res) => {
   try {
-    const data = {
-      id: sheetsDB.generateId(),
-      ...req.body,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    await sheetsDB.add('Invoices', data, getTokens(req));
-    await sheetsDB.logActivity(
-      `Invoice added — ${data.supplier} $${data.amount}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
+    const { date, dueDate, supplier, site, entity, invoiceRef, amount, gst, status, paidDate, paidAmount, description, commsRef, fileUrl, fileName, notes } = req.body;
+    const [result] = await pool.execute(
+      `INSERT INTO invoices (date, due_date, supplier, site, entity, invoice_ref, amount, gst, status, paid_date, paid_amount, description, comms_ref, file_url, file_name, notes)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [date || null, dueDate || null, supplier, site || null, entity || null, invoiceRef || null,
+       amount || 0, gst || 0, status || 'Unpaid', paidDate || null, paidAmount || null,
+       description || null, commsRef || null, fileUrl || null, fileName || null, notes || null]
     );
-    res.json({ success: true, data });
+    await logActivity(`Invoice added — ${supplier} $${amount}`, '#22c55e', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM invoices WHERE id = ?', [result.insertId]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -251,14 +211,16 @@ router.post('/invoices', async (req, res) => {
 
 router.put('/invoices/:id', async (req, res) => {
   try {
-    const data = await sheetsDB.update('Invoices', req.params.id, req.body, getTokens(req));
-    await sheetsDB.logActivity(
-      `Invoice updated — ${data.supplier}`,
-      '#f5a623',
-      req.session.user.dbId,
-      getTokens(req)
+    const { date, dueDate, supplier, site, entity, invoiceRef, amount, gst, status, paidDate, paidAmount, description, commsRef, fileUrl, fileName, notes } = req.body;
+    await pool.execute(
+      `UPDATE invoices SET date=?, due_date=?, supplier=?, site=?, entity=?, invoice_ref=?, amount=?, gst=?, status=?, paid_date=?, paid_amount=?, description=?, comms_ref=?, file_url=?, file_name=?, notes=? WHERE id=?`,
+      [date || null, dueDate || null, supplier, site || null, entity || null, invoiceRef || null,
+       amount || 0, gst || 0, status || 'Unpaid', paidDate || null, paidAmount || null,
+       description || null, commsRef || null, fileUrl || null, fileName || null, notes || null, req.params.id]
     );
-    res.json({ success: true, data });
+    await logActivity(`Invoice updated — ${supplier}`, '#f5a623', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM invoices WHERE id = ?', [req.params.id]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -266,13 +228,8 @@ router.put('/invoices/:id', async (req, res) => {
 
 router.delete('/invoices/:id', async (req, res) => {
   try {
-    await sheetsDB.delete('Invoices', req.params.id, getTokens(req));
-    await sheetsDB.logActivity(
-      'Invoice deleted',
-      '#e94560',
-      req.session.user.dbId,
-      getTokens(req)
-    );
+    await pool.execute('DELETE FROM invoices WHERE id = ?', [req.params.id]);
+    await logActivity('Invoice deleted', '#e94560', userId(req));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -285,8 +242,8 @@ router.delete('/invoices/:id', async (req, res) => {
 
 router.get('/documents', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Documents', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT * FROM documents ORDER BY upload_date DESC');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -294,19 +251,14 @@ router.get('/documents', async (req, res) => {
 
 router.post('/documents', async (req, res) => {
   try {
-    const data = {
-      id: sheetsDB.generateId(),
-      ...req.body,
-      createdAt: new Date().toISOString()
-    };
-    await sheetsDB.add('Documents', data, getTokens(req));
-    await sheetsDB.logActivity(
-      `Document logged — ${data.name}`,
-      '#22c55e',
-      req.session.user.dbId,
-      getTokens(req)
+    const { name, fileName, folderPath, filePath } = req.body;
+    const [result] = await pool.execute(
+      'INSERT INTO documents (name, file_name, folder_path, file_path) VALUES (?,?,?,?)',
+      [name, fileName, folderPath || null, filePath || null]
     );
-    res.json({ success: true, data });
+    await logActivity(`Document logged — ${name || fileName}`, '#22c55e', userId(req));
+    const [rows] = await pool.execute('SELECT * FROM documents WHERE id = ?', [result.insertId]);
+    res.json({ success: true, data: rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -314,7 +266,7 @@ router.post('/documents', async (req, res) => {
 
 router.delete('/documents/:id', async (req, res) => {
   try {
-    await sheetsDB.delete('Documents', req.params.id, getTokens(req));
+    await pool.execute('DELETE FROM documents WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -327,10 +279,8 @@ router.delete('/documents/:id', async (req, res) => {
 
 router.get('/activity', async (req, res) => {
   try {
-    const data = await sheetsDB.getAll('Activity', getTokens(req));
-    // Sort by timestamp descending
-    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    res.json({ success: true, data: data.slice(0, 50) });
+    const [rows] = await pool.execute('SELECT * FROM activity ORDER BY timestamp DESC LIMIT 50');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -345,8 +295,8 @@ router.get('/users', async (req, res) => {
     if (req.session.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
-    const data = await sheetsDB.getAll('Users', getTokens(req));
-    res.json({ success: true, data });
+    const [rows] = await pool.execute('SELECT id, email, username, name, role, created_at, last_login FROM users');
+    res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -361,7 +311,7 @@ router.put('/users/:id/role', async (req, res) => {
     if (!['admin', 'user'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
-    await sheetsDB.update('Users', req.params.id, { role }, getTokens(req));
+    await pool.execute('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

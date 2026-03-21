@@ -84,17 +84,33 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
-  // Check for Google auth
+  // Check if we're on the reset password page
+  if (window.location.pathname === '/reset-password') {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('reset-password-page').style.display = 'flex';
+    initResetPasswordPage();
+    return;
+  }
+  
+  // Check auth via API
   try {
     const auth = await API.checkAuth();
     if (auth.authenticated) {
       showApp(auth.user);
       loadAllData();
     } else {
-      showLogin();
+      // Check localStorage fallback session
+      const session = DB.getSession();
+      if (session) {
+        showApp(session);
+        loadLocalData();
+      } else {
+        showLogin();
+      }
     }
   } catch (e) {
-    // Fallback to localStorage mode
+    // API not available — fallback to localStorage mode
     console.log('API not available, using localStorage');
     DB.seedAll();
     const session = DB.getSession();
@@ -133,33 +149,171 @@ function showApp(user) {
   document.getElementById('greeting-time').textContent = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
 }
 
-function doGoogleLogin() {
-  window.location.href = '/api/auth/login';
+// ── Forgot Password ───────────────────────────────────────────
+function showForgotPassword() {
+  document.getElementById('forgot-password-form').style.display = 'block';
+  document.getElementById('reset-email').value = document.getElementById('login-user').value || '';
+  document.getElementById('reset-message').textContent = '';
+  document.getElementById('reset-email').focus();
 }
 
-// Simple username/password login
-function doSimpleLogin() {
+function hideForgotPassword() {
+  document.getElementById('forgot-password-form').style.display = 'none';
+}
+
+// ── Reset Password Page ───────────────────────────────────────
+async function initResetPasswordPage() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  
+  if (!token) {
+    document.getElementById('reset-subtitle').textContent = 'Invalid reset link';
+    document.getElementById('reset-form-fields').style.display = 'none';
+    return;
+  }
+  
+  // Verify token is valid
+  try {
+    const resp = await fetch('/api/auth/verify-reset-token?token=' + token);
+    const data = await resp.json();
+    if (!data.valid) {
+      document.getElementById('reset-subtitle').textContent = 'This reset link has expired or already been used';
+      document.getElementById('reset-form-fields').style.display = 'none';
+      return;
+    }
+    if (data.email) {
+      document.getElementById('reset-subtitle').textContent = 'Enter a new password for ' + data.email;
+    }
+  } catch (e) {
+    // Token check failed, still show form — server will validate on submit
+  }
+}
+
+async function doResetPassword() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const password = document.getElementById('new-password').value;
+  const confirm = document.getElementById('confirm-password').value;
+  const errEl = document.getElementById('reset-error');
+  
+  errEl.style.display = 'none';
+  
+  if (!password || password.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  if (password !== confirm) {
+    errEl.textContent = 'Passwords do not match';
+    errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const resp = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password })
+    });
+    const data = await resp.json();
+    
+    if (data.success) {
+      document.getElementById('reset-form-fields').style.display = 'none';
+      document.getElementById('reset-success').style.display = 'block';
+    } else {
+      errEl.textContent = data.message || 'Reset failed';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Error resetting password';
+    errEl.style.display = 'block';
+  }
+}
+
+async function sendResetEmail() {
+  const email = document.getElementById('reset-email').value.trim();
+  const msgEl = document.getElementById('reset-message');
+  
+  if (!email) {
+    msgEl.style.color = 'var(--accent)';
+    msgEl.textContent = 'Please enter your email';
+    return;
+  }
+  
+  msgEl.style.color = 'var(--text-muted)';
+  msgEl.textContent = 'Sending...';
+  
+  try {
+    const resp = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await resp.json();
+    
+    if (data.success) {
+      msgEl.style.color = 'var(--success, #22c55e)';
+      msgEl.textContent = '✓ Reset link sent! Check your email.';
+    } else {
+      msgEl.style.color = 'var(--accent)';
+      msgEl.textContent = data.message || 'Could not send reset email';
+    }
+  } catch (e) {
+    msgEl.style.color = 'var(--accent)';
+    msgEl.textContent = 'Error sending reset email';
+  }
+}
+
+// Username/password login via API
+async function doSimpleLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
   
-  // Default credentials: jimmy / spyco2024
-  const validUsers = {
-    'jimmy': { password: 'spyco2024', role: 'admin', name: 'Jimmy' },
-    'peter': { password: 'spyco2024', role: 'admin', name: 'Peter' },
-    'admin': { password: 'admin123', role: 'admin', name: 'Admin' }
-  };
-  
-  const userLower = user.toLowerCase();
-  if (validUsers[userLower] && validUsers[userLower].password === pass) {
-    const userData = { user: userLower, role: validUsers[userLower].role, name: validUsers[userLower].name };
-    DB.setSession(userData);
-    DB.seedAll();
-    showApp(userData);
-    loadLocalData();
-  } else {
-    const errEl = document.getElementById('login-error');
-    errEl.textContent = 'Invalid username or password';
+  if (!user || !pass) {
+    errEl.textContent = 'Please enter username and password';
     errEl.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username: user.toLowerCase(), password: pass })
+    });
+    const data = await response.json();
+    
+    if (data.success && data.user) {
+      DB.setSession(data.user);
+      showApp(data.user);
+      loadAllData();
+    } else {
+      errEl.textContent = data.message || 'Invalid username or password';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    // API offline — fall back to hardcoded local auth
+    console.log('API login failed, trying local fallback');
+    const validUsers = {
+      'jimmy': { password: 'spyco2024', role: 'admin', name: 'Jimmy' },
+      'peter': { password: 'spyco2024', role: 'admin', name: 'Peter' },
+      'admin': { password: 'admin123', role: 'admin', name: 'Admin' }
+    };
+    const userLower = user.toLowerCase();
+    if (validUsers[userLower] && validUsers[userLower].password === pass) {
+      const userData = { user: userLower, role: validUsers[userLower].role, name: validUsers[userLower].name };
+      DB.setSession(userData);
+      DB.seedAll();
+      showApp(userData);
+      loadLocalData();
+    } else {
+      errEl.textContent = 'Invalid username or password';
+      errEl.style.display = 'block';
+    }
   }
 }
 
@@ -167,8 +321,12 @@ async function doLogout() {
   try {
     await API.logout();
   } catch (e) {
-    DB.clearSession();
+    // ignore API errors
   }
+  // Always clear local session
+  DB.clearSession();
+  // Clear any cached app data
+  window.appData = null;
   window.location.reload();
 }
 
@@ -739,6 +897,7 @@ function showPage(pageId, navEl) {
   // Load settings if going to settings page
   if (pageId === 'settings' || pageId === 'email') {
     loadEmailSettings();
+    loadUsers();
   }
 }
 
@@ -1822,6 +1981,167 @@ function refreshDocuments() {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(renderDocuments, 600);
 });
+
+// ── User Management (Admin) ───────────────────────────────────
+async function loadUsers() {
+  const card = document.getElementById('user-management-card');
+  if (!card) return;
+  
+  // Only show for admins
+  const user = (window.appData && window.appData.currentUser) || (DB.getSession());
+  if (!user || user.role !== 'admin') {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  
+  try {
+    const resp = await API.getUsers();
+    const users = resp.data || [];
+    const tbody = document.getElementById('users-tbody');
+    
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:24px;">No users found</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><strong>${esc(u.name)}</strong></td>
+        <td>${esc(u.email || u.username || '—')}</td>
+        <td><span class="badge badge-${u.role === 'admin' ? 'red' : 'grey'}">${esc(u.role)}</span></td>
+        <td>${u.last_login ? timeAgo(u.last_login) : '<span class="text-muted">Never</span>'}</td>
+        <td class="table-actions">
+          <button class="btn btn-icon btn-ghost" onclick="editUser(${u.id}, '${esc(u.name)}', '${esc(u.email || '')}', '${esc(u.role)}')" title="Edit">✏️</button>
+          <button class="btn btn-icon btn-ghost" onclick="resetUserPassword(${u.id}, '${esc(u.name)}')" title="Reset Password">🔑</button>
+          <button class="btn btn-icon btn-ghost delete" onclick="deleteUser(${u.id}, '${esc(u.name)}')" title="Delete">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.log('Could not load users:', e);
+    card.style.display = 'none';
+  }
+}
+
+function openAddUserModal() {
+  document.getElementById('user-modal-title').textContent = 'Add User';
+  document.getElementById('u-name').value = '';
+  document.getElementById('u-email').value = '';
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-role').value = 'user';
+  document.getElementById('u-password-group').style.display = 'block';
+  delete document.getElementById('user-modal').dataset.editId;
+  openModal('user-modal');
+}
+
+function editUser(id, name, email, role) {
+  document.getElementById('user-modal-title').textContent = 'Edit User';
+  document.getElementById('u-name').value = name;
+  document.getElementById('u-email').value = email;
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-role').value = role;
+  document.getElementById('u-password-group').style.display = 'block';
+  document.getElementById('user-modal').dataset.editId = id;
+  // Password optional on edit
+  document.querySelector('#u-password-group label').textContent = 'New Password (leave blank to keep)';
+  openModal('user-modal');
+}
+
+async function saveUser() {
+  const name = document.getElementById('u-name').value.trim();
+  const email = document.getElementById('u-email').value.trim();
+  const password = document.getElementById('u-password').value;
+  const role = document.getElementById('u-role').value;
+  const editId = document.getElementById('user-modal').dataset.editId;
+
+  if (!name || !email) {
+    alert('Name and Email are required');
+    return;
+  }
+
+  try {
+    if (editId) {
+      // Update existing user
+      const body = { name, email, role };
+      if (password) body.password = password;
+      const resp = await fetch('/api/auth/update-user/' + editId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+      const data = await resp.json();
+      if (!data.success) {
+        alert(data.message || 'Update failed');
+        return;
+      }
+    } else {
+      // Create new user
+      if (!password || password.length < 6) {
+        alert('Password must be at least 6 characters');
+        return;
+      }
+      const resp = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: email, email, name, password, role })
+      });
+      const data = await resp.json();
+      if (!data.success) {
+        alert(data.message || 'Creation failed');
+        return;
+      }
+    }
+    closeModal('user-modal');
+    loadUsers();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function resetUserPassword(id, name) {
+  const newPass = prompt(`Enter new password for ${name}:`);
+  if (!newPass || newPass.length < 6) {
+    if (newPass !== null) alert('Password must be at least 6 characters');
+    return;
+  }
+  try {
+    const resp = await fetch('/api/auth/update-user/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ password: newPass })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      alert(`Password updated for ${name}`);
+    } else {
+      alert(data.message || 'Failed to update password');
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+  try {
+    const resp = await fetch('/api/auth/delete-user/' + id, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    const data = await resp.json();
+    if (data.success) {
+      loadUsers();
+    } else {
+      alert(data.message || 'Delete failed');
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
 
 // ── PWA ───────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
