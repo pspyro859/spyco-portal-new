@@ -830,6 +830,39 @@
           </table>
         </div>
         
+        <!-- Import / Export -->
+        <div class="card">
+          <div class="card-title">📦 Import / Export Data</div>
+          <p class="text-muted" style="margin-bottom:16px;">Bulk import data from CSV or export everything for backup.</p>
+          
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            <div style="flex:1;min-width:250px;">
+              <h4 style="margin-bottom:12px;font-size:0.9rem;">⬇️ Export</h4>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="btn btn-secondary" onclick="exportData('all')" style="text-align:left;">📋 Export Everything (CSV)</button>
+                <button class="btn btn-ghost" onclick="exportData('properties')" style="text-align:left;">🏠 Properties</button>
+                <button class="btn btn-ghost" onclick="exportData('contacts')" style="text-align:left;">👥 Contacts / Suppliers</button>
+                <button class="btn btn-ghost" onclick="exportData('projects')" style="text-align:left;">📐 Projects</button>
+                <button class="btn btn-ghost" onclick="exportData('invoices')" style="text-align:left;">💰 Invoices</button>
+                <button class="btn btn-ghost" onclick="exportData('reference')" style="text-align:left;">📚 Reference Codes</button>
+              </div>
+            </div>
+            
+            <div style="flex:1;min-width:250px;">
+              <h4 style="margin-bottom:12px;font-size:0.9rem;">⬆️ Import</h4>
+              <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px;">Upload a CSV file. Headers must match the export format. Existing records with the same code will be updated.</p>
+              <div style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;">
+                <input type="file" id="import-file" accept=".csv,.txt" style="display:none;" onchange="handleImportFile(this)" />
+                <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">Choose CSV File</button>
+                <div id="import-file-name" class="text-muted" style="margin-top:8px;font-size:0.85rem;"></div>
+              </div>
+              <div id="import-status" style="margin-top:12px;display:none;" class="card" style="padding:12px;">
+                <div id="import-results"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div class="card">
           <div class="card-title">Email Configuration (IMAP)</div>
           <div class="form-grid">
