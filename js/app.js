@@ -1982,6 +1982,147 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(renderDocuments, 600);
 });
 
+// ── Import / Export ───────────────────────────────────────────
+function exportTable(table) {
+  window.location.href = '/api/data/export-csv/' + table;
+}
+
+function exportAll() {
+  fetch('/api/data/export-all', { credentials: 'include' })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) { alert(data.message || 'Export failed'); return; }
+      const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      a.href = url;
+      a.download = `spyco-portal-backup-${dateStr}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => alert('Export error: ' + err.message));
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  
+  // Parse header
+  const headers = parseCSVLine(lines[0]);
+  
+  // Parse rows
+  return lines.slice(1).map(line => {
+    const values = parseCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h.trim().toLowerCase().replace(/\s+/g, '_')] = (values[i] || '').trim();
+    });
+    return obj;
+  });
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+async function doImport() {
+  const table = document.getElementById('import-table').value;
+  const mode = document.getElementById('import-mode').value;
+  const fileInput = document.getElementById('import-file');
+  const statusEl = document.getElementById('import-status');
+  
+  if (!fileInput.files[0]) {
+    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = 'Please select a file';
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const text = await file.text();
+  let rows;
+  
+  if (file.name.endsWith('.json')) {
+    try {
+      const json = JSON.parse(text);
+      // Handle full backup format or simple array
+      if (json.data && json.data[table]) {
+        rows = json.data[table];
+      } else if (Array.isArray(json)) {
+        rows = json;
+      } else {
+        statusEl.style.color = 'var(--accent)';
+        statusEl.textContent = 'JSON format not recognized. Use export format or a plain array.';
+        return;
+      }
+    } catch (e) {
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = 'Invalid JSON file';
+      return;
+    }
+  } else {
+    rows = parseCSV(text);
+  }
+  
+  if (!rows.length) {
+    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = 'No rows found in file';
+    return;
+  }
+  
+  if (mode === 'replace' && !confirm(`This will DELETE all existing ${table} data and replace with ${rows.length} rows. Continue?`)) {
+    return;
+  }
+  
+  statusEl.style.color = 'var(--text-muted)';
+  statusEl.textContent = `Importing ${rows.length} rows...`;
+  
+  try {
+    const resp = await fetch('/api/data/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ table, rows, mode })
+    });
+    const data = await resp.json();
+    
+    if (data.success) {
+      statusEl.style.color = 'var(--success, #22c55e)';
+      statusEl.textContent = `✓ Imported ${data.imported} of ${data.total} rows`;
+      fileInput.value = '';
+      // Reload data
+      loadAllData();
+    } else {
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = data.message || 'Import failed';
+    }
+  } catch (e) {
+    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
 // ── User Management (Admin) ───────────────────────────────────
 async function loadUsers() {
   const card = document.getElementById('user-management-card');

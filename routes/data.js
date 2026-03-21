@@ -318,4 +318,180 @@ router.put('/users/:id/role', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// REFERENCE DATA
+// ═══════════════════════════════════════════════════════════════
+
+router.get('/reference', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM reference_data ORDER BY category, code');
+    // Group by category
+    const grouped = {};
+    rows.forEach(r => {
+      if (!grouped[r.category]) grouped[r.category] = [];
+      grouped[r.category].push(r);
+    });
+    res.json({ success: true, data: grouped });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/reference', async (req, res) => {
+  try {
+    const { category, code, name, description } = req.body;
+    if (!category || !code || !name) {
+      return res.status(400).json({ success: false, message: 'Category, code, and name required' });
+    }
+    const [result] = await pool.execute(
+      'INSERT INTO reference_data (category, code, name, description) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description)',
+      [category, code, name, description || null]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/reference/:id', async (req, res) => {
+  try {
+    await pool.execute('DELETE FROM reference_data WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// IMPORT / EXPORT (Bulk)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/data/export-all
+ * Export everything as JSON for backup/transfer
+ */
+router.get('/export-all', async (req, res) => {
+  try {
+    const [properties] = await pool.execute('SELECT * FROM properties');
+    const [contacts] = await pool.execute('SELECT * FROM contacts');
+    const [projects] = await pool.execute('SELECT * FROM projects');
+    const [invoices] = await pool.execute('SELECT * FROM invoices');
+    const [documents] = await pool.execute('SELECT * FROM documents');
+    const [reference] = await pool.execute('SELECT * FROM reference_data');
+    const [users] = await pool.execute('SELECT id, email, name, role, created_at FROM users');
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      exportedBy: req.session.user.email || req.session.user.name,
+      version: '2.0',
+      data: { properties, contacts, projects, invoices, documents, reference, users }
+    };
+
+    res.json({ success: true, data: exportData });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/data/export-csv/:table
+ * Export a single table as CSV
+ */
+router.get('/export-csv/:table', async (req, res) => {
+  const allowed = ['properties', 'contacts', 'projects', 'invoices', 'reference_data'];
+  const table = req.params.table;
+  if (!allowed.includes(table)) {
+    return res.status(400).json({ success: false, message: 'Invalid table' });
+  }
+  try {
+    const [rows] = await pool.execute(`SELECT * FROM ${table}`);
+    if (!rows.length) {
+      return res.status(200).send('No data');
+    }
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(r => headers.map(h => {
+        let val = r[h] == null ? '' : String(r[h]);
+        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+          val = '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      }).join(','))
+    ].join('\n');
+
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=spyco-${table}-${dateStr}.csv`);
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/data/import
+ * Import bulk data from JSON
+ */
+router.post('/import', async (req, res) => {
+  if (req.session.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required' });
+  }
+
+  const { table, rows, mode } = req.body;
+  // mode: 'append' (add to existing) or 'replace' (clear and import)
+  const allowed = ['properties', 'contacts', 'projects', 'invoices', 'reference_data'];
+  
+  if (!allowed.includes(table)) {
+    return res.status(400).json({ success: false, message: 'Invalid table: ' + table });
+  }
+  if (!rows || !Array.isArray(rows) || !rows.length) {
+    return res.status(400).json({ success: false, message: 'No rows to import' });
+  }
+
+  try {
+    if (mode === 'replace') {
+      await pool.execute(`DELETE FROM ${table}`);
+    }
+
+    let imported = 0;
+    const columnMap = {
+      properties: ['code', 'address', 'entity', 'status', 'tenant', 'rent', 'lease_start', 'lease_end', 'notes'],
+      contacts: ['code', 'name', 'category', 'phone', 'email', 'person', 'notes'],
+      projects: ['name', 'site', 'entity', 'status', 'type', 'start_date', 'due_date', 'budget', 'notes'],
+      invoices: ['date', 'due_date', 'supplier', 'site', 'entity', 'invoice_ref', 'amount', 'gst', 'status', 'description', 'comms_ref', 'notes'],
+      reference_data: ['category', 'code', 'name', 'description']
+    };
+
+    const cols = columnMap[table];
+    const placeholders = cols.map(() => '?').join(',');
+    const sql = table === 'reference_data'
+      ? `INSERT INTO ${table} (${cols.join(',')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description)`
+      : `INSERT INTO ${table} (${cols.join(',')}) VALUES (${placeholders})`;
+
+    for (const row of rows) {
+      const values = cols.map(c => {
+        // Handle both snake_case and camelCase field names
+        const camel = c.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+        let val = row[c] !== undefined ? row[c] : (row[camel] !== undefined ? row[camel] : null);
+        if (val === '' || val === undefined) val = null;
+        return val;
+      });
+      try {
+        await pool.execute(sql, values);
+        imported++;
+      } catch (rowErr) {
+        console.log(`Import row error (${table}):`, rowErr.message);
+      }
+    }
+
+    await logActivity(`Imported ${imported} rows into ${table}`, '#22c55e', userId(req));
+    res.json({ success: true, imported, total: rows.length });
+  } catch (error) {
+    console.error('Import error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
