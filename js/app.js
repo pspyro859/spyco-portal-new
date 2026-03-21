@@ -898,7 +898,7 @@ function showPage(pageId, navEl) {
   if (pageId === 'settings' || pageId === 'email') {
     loadEmailSettings();
     loadUsers();
-    updateImportHelp();
+    if (typeof updateColumnGuide === 'function') updateColumnGuide();
   }
 }
 
@@ -2002,12 +2002,15 @@ const TABLE_COLUMNS = {
                     example: ['Subject','INVOICE','Payable','Bills: Trade invoices, utility bills, or progress claims'] }
 };
 
-function updateImportHelp() {
+function updateColumnGuide() {
   const table = document.getElementById('import-table').value;
   const info = TABLE_COLUMNS[table];
-  const helpEl = document.getElementById('import-help');
-  helpEl.innerHTML = '<strong>Spreadsheet columns:</strong><br>' +
+  if (!info) return;
+  const el = document.getElementById('column-guide');
+  if (!el) return;
+  el.innerHTML = '<strong>Spreadsheet columns for ' + info.labels[0] + ':</strong><br>' +
     info.labels.map((l, i) => `<span style="display:inline-block;margin:2px 4px;padding:2px 8px;background:var(--bg-card);border-radius:4px;border:1px solid var(--border);">${l}</span>`).join('') +
+    '<br><br><strong>Example:</strong> <code>' + info.example.join(', ') + '</code>' +
     (table === 'reference_data' ? '<br><br><strong>Categories:</strong> Subject, Systems, Structure, Financial, Quarters' : '');
 }
 
@@ -2345,70 +2348,6 @@ async function deleteUser(id, name) {
   } catch (e) {
     alert('Error: ' + e.message);
   }
-}
-
-// ── Import / Export ───────────────────────────────────────────
-function exportData(type) {
-  const url = type === 'all' ? '/api/reference/export/all' : `/api/reference/export/${type}`;
-  window.location.href = url;
-}
-
-async function handleImportFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  document.getElementById('import-file-name').textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-  
-  if (!confirm(`Import data from "${file.name}"?\n\nExisting records with matching codes will be updated.`)) {
-    input.value = '';
-    document.getElementById('import-file-name').textContent = '';
-    return;
-  }
-  
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  document.getElementById('import-status').style.display = 'block';
-  document.getElementById('import-results').innerHTML = '<span class="text-muted">Importing...</span>';
-  
-  try {
-    const resp = await fetch('/api/reference/import', {
-      method: 'POST',
-      credentials: 'include',
-      body: formData
-    });
-    const data = await resp.json();
-    
-    if (data.success) {
-      const r = data.imported;
-      let html = '<div style="color:var(--success, #22c55e);font-weight:600;margin-bottom:8px;">✓ Import complete!</div>';
-      html += '<div style="font-size:0.85rem;">';
-      if (r.properties) html += `🏠 ${r.properties} properties<br>`;
-      if (r.contacts) html += `👥 ${r.contacts} contacts<br>`;
-      if (r.projects) html += `📐 ${r.projects} projects<br>`;
-      if (r.invoices) html += `💰 ${r.invoices} invoices<br>`;
-      if (r.reference) html += `📚 ${r.reference} reference codes<br>`;
-      if (!r.properties && !r.contacts && !r.projects && !r.invoices && !r.reference) {
-        html += 'No data imported — check your CSV format';
-      }
-      if (data.errors && data.errors.length > 0) {
-        html += `<br><div style="color:var(--accent);margin-top:8px;">⚠️ ${data.errors.length} error(s):<br>`;
-        data.errors.forEach(e => { html += `<small>${esc(e)}</small><br>`; });
-        html += '</div>';
-      }
-      html += '</div>';
-      document.getElementById('import-results').innerHTML = html;
-      
-      // Reload data
-      loadAllData();
-    } else {
-      document.getElementById('import-results').innerHTML = `<div style="color:var(--accent);">✗ ${esc(data.message)}</div>`;
-    }
-  } catch (e) {
-    document.getElementById('import-results').innerHTML = `<div style="color:var(--accent);">✗ Error: ${esc(e.message)}</div>`;
-  }
-  
-  input.value = '';
 }
 
 // ── PWA ───────────────────────────────────────────────────────

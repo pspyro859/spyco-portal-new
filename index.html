@@ -804,62 +804,10 @@
         <div class="page-header">
           <div>
             <h1>⚙️ Settings</h1>
-            <p>Configure users, email and storage settings</p>
+            <p>Manage users, import/export data, configure email</p>
           </div>
         </div>
         
-        <!-- Import / Export -->
-        <div class="card">
-          <div class="card-title">📦 Import / Export Data</div>
-          <p class="text-muted" style="margin-bottom:16px;">Download a spreadsheet, add your data, then upload it back.</p>
-          
-          <!-- Step 1: Pick what to work with -->
-          <div class="field-group" style="margin-bottom:16px;">
-            <label style="font-weight:600;">What do you want to import/export?</label>
-            <select id="import-table" style="padding:12px;font-size:1rem;" onchange="updateImportHelp()">
-              <option value="properties">🏠 Properties / Sites</option>
-              <option value="contacts">👷 Suppliers / Contacts</option>
-              <option value="projects">📋 Projects</option>
-              <option value="invoices">💰 Invoices</option>
-              <option value="reference_data">🏷️ Reference Codes (SPY COMMS)</option>
-            </select>
-          </div>
-          
-          <!-- Step 2: Export / Download -->
-          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-            <button class="btn btn-secondary" onclick="downloadTemplate()" style="padding:12px 20px;">
-              📄 Download Empty Template
-            </button>
-            <button class="btn btn-primary" onclick="downloadCurrentData()" style="padding:12px 20px;">
-              📥 Download Current Data
-            </button>
-          </div>
-          <p class="text-muted" style="font-size:0.85rem;margin-bottom:20px;">
-            Open the downloaded CSV in Excel or Google Sheets. Add your rows, save as CSV, then upload below.
-          </p>
-          
-          <!-- Step 3: Upload -->
-          <div style="border-top:1px solid var(--border);padding-top:16px;">
-            <div style="font-weight:600;margin-bottom:8px;">Upload your spreadsheet</div>
-            <div class="field-group" style="margin-bottom:12px;">
-              <input type="file" id="import-file" accept=".csv" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;font-size:1rem;" />
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
-              <button class="btn btn-primary" onclick="doImport('append')" style="padding:12px 20px;">
-                ➕ Add to existing data
-              </button>
-              <button class="btn btn-secondary" onclick="doImport('replace')" style="padding:12px 20px;">
-                🔄 Replace all data
-              </button>
-            </div>
-            <div id="import-status" style="margin-top:12px;font-size:0.95rem;"></div>
-            
-            <!-- Column guide -->
-            <div id="import-help" style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border);font-size:0.85rem;">
-            </div>
-          </div>
-        </div>
-
         <!-- User Management (Admin Only) -->
         <div class="card" id="user-management-card">
           <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -881,42 +829,56 @@
             </tbody>
           </table>
         </div>
-        
+
         <!-- Import / Export -->
         <div class="card">
-          <div class="card-title">📦 Import / Export Data</div>
-          <p class="text-muted" style="margin-bottom:16px;">Bulk import data from CSV or export everything for backup.</p>
+          <div class="card-title">📦 Import / Export Spreadsheet</div>
           
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-            <div style="flex:1;min-width:250px;">
-              <h4 style="margin-bottom:12px;font-size:0.9rem;">⬇️ Export</h4>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                <button class="btn btn-secondary" onclick="exportData('all')" style="text-align:left;">📋 Export Everything (CSV)</button>
-                <button class="btn btn-ghost" onclick="exportData('properties')" style="text-align:left;">🏠 Properties</button>
-                <button class="btn btn-ghost" onclick="exportData('contacts')" style="text-align:left;">👥 Contacts / Suppliers</button>
-                <button class="btn btn-ghost" onclick="exportData('projects')" style="text-align:left;">📐 Projects</button>
-                <button class="btn btn-ghost" onclick="exportData('invoices')" style="text-align:left;">💰 Invoices</button>
-                <button class="btn btn-ghost" onclick="exportData('reference')" style="text-align:left;">📚 Reference Codes</button>
-              </div>
+          <!-- Pick what to work with -->
+          <div class="field-group" style="margin-bottom:16px;">
+            <label style="font-weight:600;">Choose what to work with</label>
+            <select id="import-table" style="padding:12px;font-size:1rem;" onchange="updateColumnGuide()">
+              <option value="properties">🏠 Properties / Sites</option>
+              <option value="contacts">👷 Suppliers / Contacts</option>
+              <option value="projects">📋 Projects</option>
+              <option value="invoices">💰 Invoices</option>
+              <option value="reference_data">🏷️ Reference Codes (SPY COMMS)</option>
+            </select>
+          </div>
+
+          <!-- Column guide -->
+          <div id="column-guide" style="margin-bottom:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border);font-size:0.85rem;"></div>
+          
+          <!-- Download buttons -->
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+            <button class="btn btn-secondary" onclick="downloadTemplate()" style="padding:12px 20px;">📄 Download Empty Template</button>
+            <button class="btn btn-primary" onclick="downloadCurrentData()" style="padding:12px 20px;">📥 Download Current Data</button>
+          </div>
+          
+          <p class="text-muted" style="font-size:0.85rem;margin-bottom:20px;">
+            1. Download the template or current data<br>
+            2. Open in Excel or Google Sheets<br>
+            3. Add or edit your rows<br>
+            4. Save as CSV and upload below
+          </p>
+          
+          <!-- Upload -->
+          <div style="border-top:1px solid var(--border);padding-top:16px;">
+            <div style="font-weight:600;margin-bottom:12px;">Upload your spreadsheet</div>
+            <div class="field-group" style="margin-bottom:12px;">
+              <input type="file" id="import-file" accept=".csv" style="padding:12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text);width:100%;font-size:1rem;" />
             </div>
-            
-            <div style="flex:1;min-width:250px;">
-              <h4 style="margin-bottom:12px;font-size:0.9rem;">⬆️ Import</h4>
-              <p class="text-muted" style="font-size:0.8rem;margin-bottom:12px;">Upload a CSV file. Headers must match the export format. Existing records with the same code will be updated.</p>
-              <div style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;">
-                <input type="file" id="import-file" accept=".csv,.txt" style="display:none;" onchange="handleImportFile(this)" />
-                <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">Choose CSV File</button>
-                <div id="import-file-name" class="text-muted" style="margin-top:8px;font-size:0.85rem;"></div>
-              </div>
-              <div id="import-status" style="margin-top:12px;display:none;" class="card" style="padding:12px;">
-                <div id="import-results"></div>
-              </div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+              <button class="btn btn-primary" onclick="doImport('append')" style="padding:12px 20px;">➕ Add to existing data</button>
+              <button class="btn btn-ghost" onclick="doImport('replace')" style="padding:12px 20px;color:var(--accent);">🔄 Replace all data</button>
             </div>
+            <div id="import-status" style="margin-top:12px;font-size:0.95rem;"></div>
           </div>
         </div>
         
+        <!-- Email Settings -->
         <div class="card">
-          <div class="card-title">Email Configuration (IMAP)</div>
+          <div class="card-title">📧 Email Configuration (IMAP)</div>
           <div class="form-grid">
             <div class="field-group">
               <label>IMAP Server</label>
@@ -952,28 +914,9 @@
           </div>
         </div>
         
+        <!-- Filing Rules -->
         <div class="card">
-          <div class="card-title">Storage Configuration</div>
-          <div class="form-grid">
-            <div class="field-group">
-              <label>Storage Type</label>
-              <select id="set-storage-type" onchange="toggleStorageOptions()">
-                <option value="local">Local (Browser Storage)</option>
-                <option value="drive">Google Drive</option>
-              </select>
-            </div>
-            <div class="field-group" id="drive-folder-group" style="display:none;">
-              <label>Google Drive Folder ID</label>
-              <input type="text" id="set-drive-folder" placeholder="Folder ID from Drive URL" />
-            </div>
-          </div>
-          <div style="margin-top:20px;">
-            <button class="btn btn-primary" onclick="saveStorageSettings()">Save Storage Settings</button>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-title">Filing Rules (SPY COMMS Format)</div>
+          <div class="card-title">📁 Filing Rules (SPY COMMS Format)</div>
           <p class="text-muted" style="margin-bottom:16px;">Emails are filed by SPY COMMS reference: <code>DATE_SUBJECT_SYSTEM_STRUCTURE_SITE_SUPPLIER</code></p>
           
           <div class="form-grid">
